@@ -121,19 +121,54 @@
       color: #fff;
     }
 
+    /* ================= GUIDE IMAGE ================= */
+
+    .utr-image-wrap {
+      position: relative;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+
     .utr-guide-image {
       width: 100%;
       max-width: 430px;
       height: auto;
       display: block;
-      margin: 12px auto 10px;
+      margin: auto;
       border-radius: 16px;
       border: 1px solid rgba(139,92,255,.4);
       box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      cursor: zoom-in;
     }
 
-    /* ================= GUIDE DOWNLOAD ================= */
+    /* CROSS BUTTON */
+
+    .utr-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 10;
+
+      width: 38px;
+      height: 38px;
+
+      border: none;
+      border-radius: 50%;
+
+      background: rgba(0,0,0,.78);
+      color: #fff;
+
+      font-size: 18px;
+      line-height: 38px;
+      text-align: center;
+
+      cursor: pointer;
+    }
+
+    .utr-close:active {
+      transform: scale(.90);
+    }
+
+    /* ================= DOWNLOAD GUIDE ================= */
 
     .guide-download {
       display: flex;
@@ -146,18 +181,24 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
+
       padding: 12px 18px;
+
       border-radius: 12px;
+
       color: #fff;
       text-decoration: none;
+
       font-size: 14px;
       font-weight: 700;
+
       background: linear-gradient(
         90deg,
         #9b2cff,
         #5b55ff,
         #087cff
       );
+
       box-shadow: 0 7px 20px rgba(65,70,255,.22);
     }
 
@@ -171,18 +212,23 @@
       width: 100%;
       border: 0;
       border-radius: 18px;
+
       padding: 17px 20px;
       margin-top: 25px;
+
       color: #fff;
       font-size: 17px;
       font-weight: 800;
+
       cursor: pointer;
+
       background: linear-gradient(
         90deg,
         #9b2cff,
         #5b55ff,
         #087cff
       );
+
       box-shadow: 0 8px 25px rgba(65,70,255,.25);
     }
 
@@ -238,7 +284,6 @@
       enctype="multipart/form-data"
     >
 
-
       <!-- ================= UTR ================= -->
 
       <label for="transactionId">
@@ -263,17 +308,27 @@
 
         <!-- UTR GUIDE IMAGE -->
 
-        <a
-          href="/assets/utr-guide.jpg"
-          target="_blank"
-          rel="noopener"
+        <div
+          class="utr-image-wrap"
+          onclick="closeUtrGuide(event)"
         >
+
+          <button
+            type="button"
+            class="utr-close"
+            onclick="event.stopPropagation(); closeUtrGuide(event)"
+          >
+            ❌
+          </button>
+
+
           <img
             src="/assets/utr-guide.jpg"
             alt="How to find UTR in PhonePe"
             class="utr-guide-image"
           >
-        </a>
+
+        </div>
 
 
         <!-- DOWNLOAD GUIDE -->
@@ -284,6 +339,7 @@
             class="guide-download-btn"
             href="/assets/utr-guide.jpg"
             download="vexora-utr-guide.jpg"
+            onclick="event.stopPropagation()"
           >
             ↓ Download Guide
           </a>
@@ -292,6 +348,8 @@
 
       </details>
 
+
+      <!-- UTR INPUT -->
 
       <input
         id="transactionId"
@@ -364,6 +422,25 @@
   </section>
 
 </main>
+
+
+<script>
+
+function closeUtrGuide(event) {
+
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  const guide = document.querySelector(".utr-guide");
+
+  if (guide) {
+    guide.removeAttribute("open");
+  }
+}
+
+</script>
 
 </body>
 </html>
