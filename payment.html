@@ -1,22 +1,233 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vexora — Payment</title><link rel="stylesheet" href="/styles.css"></head>
-<body><nav class="nav"><div class="navin"><a class="brand" href="/">V<span>exora</span></a><div class="navlinks"><a href="/plans.html">← Plans</a></div></div></nav>
-<main class="wrap"><section class="section form"><span class="badge">PAYMENT</span><h1>Complete <span class="grad">payment.</span></h1><p class="lead">Pay using UPI or crypto, then submit the details below for manual verification.</p>
-<div class="paybox"><div class="paymethod"><h3>UPI / PhonePe</h3><p class="muted">UPI contact:</p><div class="copy">+91 70676 03886</div><p class="muted">Add your current UPI QR image in <code>public/assets/upi-qr.png</code> if you want a QR displayed.</p></div><div class="paymethod"><h3>Crypto</h3><p class="muted">For security, configure your current wallet addresses in the server/payment page before production use.</p><div class="copy">USDT / ETH / supported networks</div></div></div>
-<div class="notice">Verify the network and payment address carefully before sending crypto. Do not send crypto to an address unless you have independently confirmed it.</div>
-<form id="paymentForm" enctype="multipart/form-data"><div class="row"><div class="field"><label>Selected Plan</label><input id="plan" name="plan" readonly></div><div class="field"><label>Amount (₹)</label><input id="amount" name="amount" readonly></div></div>
-<div class="field"><label>Payment Method</label><select name="method" required><option value="">Choose</option><option>UPI</option><option>Crypto</option></select></div>
-<div class="field"><label>UTR / Transaction ID</label><input name="utr" placeholder="Enter payment reference" required></div>
-<div class="row"><div class="field"><label>TradingView Username</label><input name="tradingview" placeholder="@username or username" required></div><div class="field"><label>Telegram Username</label><input name="telegram" placeholder="@username" required></div></div>
-<div class="field"><label>Payment Screenshot</label><input type="file" name="screenshot" accept="image/*,application/pdf" required></div>
-<button class="btn" type="submit">Submit Payment Details</button><div id="result"></div></form>
-<section class="section"><div class="card"><b>Payment Related Query</b><p class="muted">Need help with payment?</p><a class="btn alt" href="https://t.me/Jkhub_premium">Open Telegram</a></div></section>
-</section></main><footer class="footer">Never share OTP, UPI PIN, wallet seed phrase or password.</footer>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vexora — Payment</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;background:#080d1d;color:#f5f7ff;min-height:100vh}
+    header{padding:22px 35px;border-bottom:1px solid #202a48;background:#070b17}
+    .logo{font-size:32px;font-weight:800}.logo span{color:#8b5cf6}
+    .wrap{max-width:720px;margin:auto;padding:30px 16px 60px}
+    h1{font-size:38px;margin-bottom:10px} h1 span{color:#8b5cf6}
+    .sub{color:#9ca9c7;font-size:17px;line-height:1.6;margin-bottom:24px}
+    .card{background:#10182d;border:1px solid #293657;border-radius:20px;padding:22px;margin-bottom:18px}
+    h2{margin-bottom:16px}
+    label{display:block;color:#cbd5ef;font-weight:700;margin:16px 0 8px}
+    input,select{width:100%;padding:15px;border-radius:13px;border:1px solid #293657;background:#080f22;color:#fff;font-size:16px}
+    .amount{font-size:28px;font-weight:800;color:#a78bfa;margin-top:8px}
+    .methods{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .method{background:#0b1225;border:1px solid #293657;border-radius:15px;padding:18px;color:#fff;text-align:left;cursor:pointer}
+    .method.active{border-color:#8b5cf6;box-shadow:0 0 0 1px #8b5cf6}
+    .method strong{display:block;font-size:18px;margin-bottom:5px}
+    .method small{color:#9ca9c7}
+    .paybox{display:none;margin-top:18px;background:#0b1225;border:1px solid #293657;border-radius:16px;padding:18px}
+    .paybox.active{display:block}
+    .paybox h3{margin-bottom:10px}
+    .paybox p{color:#b6c0d8;line-height:1.55}
+    .qr{display:block;width:min(100%,330px);max-height:460px;object-fit:contain;margin:18px auto;border-radius:12px;background:#fff}
+    .address{word-break:break-all;background:#060b18;border:1px solid #293657;border-radius:10px;padding:12px;margin-top:10px;color:#dfe5f5;font-size:14px}
+    .copy{margin-top:10px;padding:10px 14px;border:0;border-radius:10px;background:#273454;color:#fff;cursor:pointer}
+    .next,.submit{width:100%;padding:16px;border:0;border-radius:13px;color:#fff;font-weight:800;font-size:17px;cursor:pointer;margin-top:16px;background:linear-gradient(90deg,#7c3aed,#2563eb)}
+    .whatsapp{background:#16a34a}
+    .hidden{display:none}
+    .note{color:#9ca9c7;font-size:14px;line-height:1.55;margin-top:12px}
+    .success{display:none;margin-top:14px;padding:14px;border-radius:12px;background:#052d1d;border:1px solid #168552;color:#9ff0c4}
+    @media(max-width:600px){header{padding:20px}.methods{grid-template-columns:1fr}h1{font-size:32px}}
+  </style>
+</head>
+<body>
+<header><div class="logo">V<span>exora</span></div></header>
+
+<main class="wrap">
+  <h1>Complete Your <span>Membership</span></h1>
+  <p class="sub">Select your plan, choose a payment method, complete the payment, then submit your payment proof.</p>
+
+  <section class="card">
+    <h2>Selected Plan</h2>
+    <select id="plan" onchange="updatePlan()">
+      <option value="1day">1 Day Free — ₹0</option>
+      <option value="7days">7 Days — ₹999</option>
+      <option value="15days">15 Days — ₹1,499</option>
+      <option value="30days">30 Days — ₹2,499</option>
+      <option value="lifetime">Lifetime — ₹11,000</option>
+    </select>
+    <div class="amount" id="amount">₹0</div>
+  </section>
+
+  <section id="freeCard" class="card">
+    <h2>1 Day Free Access</h2>
+    <p class="sub">Free plan ke liye payment ki zarurat nahi hai. WhatsApp par access request bhejo.</p>
+    <button class="next whatsapp" onclick="openWhatsApp()">Get 1 Day Free Access on WhatsApp</button>
+  </section>
+
+  <section id="paidFlow" class="hidden">
+    <div class="card">
+      <h2>Choose Payment Method</h2>
+      <div class="methods">
+        <button class="method" id="upiBtn" onclick="showMethod('upi')">
+          <strong>UPI / PhonePe</strong><small>Scan QR to pay</small>
+        </button>
+        <button class="method" id="cryptoBtn" onclick="showMethod('crypto')">
+          <strong>USDT / Crypto</strong><small>TRC20 / BEP20 / ERC20</small>
+        </button>
+      </div>
+
+      <div class="paybox" id="upiBox">
+        <h3>UPI / PhonePe</h3>
+        <p>Scan the QR using PhonePe/UPI app and complete the payment.</p>
+        <img class="qr" src="/assets/upi-phonepe.jpg" alt="UPI PhonePe QR">
+        <p><strong>UPI contact:</strong> +91 70676 03886</p>
+        <button class="next" onclick="goSubmit('UPI / PhonePe')">I Have Paid — Continue</button>
+      </div>
+
+      <div class="paybox" id="cryptoBox">
+        <h3>USDT / Crypto</h3>
+        <p>Select the network you are going to use. Verify the network and address before sending.</p>
+
+        <label>Network</label>
+        <select id="network" onchange="showNetwork()">
+          <option value="trc20">USDT — TRC20</option>
+          <option value="bep20">USDT — BEP20</option>
+          <option value="erc20">ETH — ERC20</option>
+        </select>
+
+        <div id="trc20" class="networkBox">
+          <img class="qr" src="/assets/usdt-trc20.jpg" alt="USDT TRC20 QR">
+          <p><strong>USDT TRC20 address</strong></p>
+          <div class="address">TGnAWoHjXizow51pMuwhwKiboYy22DC2bJ</div>
+          <button class="copy" onclick="copyText('TGnAWoHjXizow51pMuwhwKiboYy22DC2bJ')">Copy Address</button>
+        </div>
+
+        <div id="bep20" class="networkBox hidden">
+          <img class="qr" src="/assets/usdt-bep20.jpg" alt="USDT BEP20 QR">
+          <p><strong>USDT BEP20 address</strong></p>
+          <div class="address">0x4ab23A898208485D2bDq4C34D28C57649C1752fD</div>
+          <button class="copy" onclick="copyText('0x4ab23A898208485D2bDq4C34D28C57649C1752fD')">Copy Address</button>
+        </div>
+
+        <div id="erc20" class="networkBox hidden">
+          <img class="qr" src="/assets/eth-erc20.jpg" alt="ETH ERC20 QR">
+          <p><strong>ETH ERC20 address</strong></p>
+          <div class="address">0x4ab23A898208485D2bDq4C34D28C57649C1752fD</div>
+          <button class="copy" onclick="copyText('0x4ab23A898208485D2bDq4C34D28C57649C1752fD')">Copy Address</button>
+        </div>
+
+        <button class="next" onclick="goSubmit('Crypto')">I Have Paid — Continue</button>
+        <p class="note">Crypto transfer me network aur address ko carefully verify karein.</p>
+      </div>
+    </div>
+
+    <div class="card hidden" id="submitCard">
+      <h2>Submit Payment Details</h2>
+      <p class="sub">Payment complete karne ke baad ye details submit karein.</p>
+
+      <form id="paymentForm" action="/api/payment" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="plan" id="planInput">
+        <input type="hidden" name="amount" id="amountInput">
+        <input type="hidden" name="payment_method" id="methodInput">
+        <input type="hidden" name="network" id="networkInput">
+
+        <label>UTR / Transaction ID</label>
+        <input name="utr" type="text" placeholder="Enter transaction/reference ID" required>
+
+        <label>TradingView Username</label>
+        <input name="tradingview" type="text" placeholder="@username or username" required>
+
+        <label>Telegram Username</label>
+        <input name="telegram" type="text" placeholder="@username" required>
+
+        <label>Payment Proof / Screenshot</label>
+        <input name="payment_screenshot" type="file" accept="image/*" required>
+
+        <button class="submit" type="submit">Submit Payment Details</button>
+      </form>
+
+      <div class="success" id="success">Payment details submitted successfully.</div>
+    </div>
+  </section>
+</main>
+
 <script>
-const q=new URLSearchParams(location.search);
-document.getElementById("plan").value=q.get("plan")||"";
-document.getElementById("amount").value=q.get("amount")||"";
-document.getElementById("paymentForm").addEventListener("submit",async e=>{
- e.preventDefault(); const r=document.getElementById("result"); r.className="notice"; r.textContent="Submitting...";
- try{const res=await fetch("/api/payment",{method:"POST",body:new FormData(e.target)});const data=await res.json();if(!data.ok)throw new Error(data.error||"Failed");r.textContent="Submitted successfully. Reference: "+data.id;}catch(err){r.textContent=err.message;}
+const plans = {
+  "1day": {name:"1 Day Free", amount:0},
+  "7days": {name:"7 Days", amount:999},
+  "15days": {name:"15 Days", amount:1499},
+  "30days": {name:"30 Days", amount:2499},
+  "lifetime": {name:"Lifetime", amount:11000}
+};
+
+function updatePlan(){
+  const key=document.getElementById("plan").value;
+  const p=plans[key];
+  document.getElementById("amount").textContent="₹"+p.amount.toLocaleString("en-IN");
+  document.getElementById("planInput").value=p.name;
+  document.getElementById("amountInput").value=p.amount;
+
+  const free=key==="1day";
+  document.getElementById("freeCard").classList.toggle("hidden",!free);
+  document.getElementById("paidFlow").classList.toggle("hidden",free);
+}
+
+function showMethod(type){
+  document.getElementById("upiBox").classList.toggle("active",type==="upi");
+  document.getElementById("cryptoBox").classList.toggle("active",type==="crypto");
+  document.getElementById("upiBtn").classList.toggle("active",type==="upi");
+  document.getElementById("cryptoBtn").classList.toggle("active",type==="crypto");
+  document.getElementById("methodInput").value=type==="upi"?"UPI / PhonePe":"Crypto";
+}
+
+function showNetwork(){
+  ["trc20","bep20","erc20"].forEach(x=>document.getElementById(x).classList.add("hidden"));
+  const n=document.getElementById("network").value;
+  document.getElementById(n).classList.remove("hidden");
+  document.getElementById("networkInput").value=n.toUpperCase();
+}
+
+function goSubmit(method){
+  document.getElementById("methodInput").value=method;
+  if(method==="Crypto") document.getElementById("networkInput").value=document.getElementById("network").value.toUpperCase();
+  document.getElementById("submitCard").classList.remove("hidden");
+  document.getElementById("submitCard").scrollIntoView({behavior:"smooth"});
+}
+
+function openWhatsApp(){
+  const number="916371406885";
+  const message="Hello Vexora, I want to activate my 1 Day Free Access.";
+  location.href="https://wa.me/"+number+"?text="+encodeURIComponent(message);
+}
+
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    alert("Address copied");
+  }catch(e){
+    prompt("Copy address:",text);
+  }
+}
+
+document.getElementById("paymentForm").addEventListener("submit",async function(e){
+  e.preventDefault();
+  const btn=this.querySelector(".submit");
+  btn.disabled=true;
+  btn.textContent="Submitting...";
+  try{
+    const r=await fetch(this.action,{method:"POST",body:new FormData(this)});
+    if(!r.ok) throw new Error();
+    document.getElementById("success").style.display="block";
+    this.reset();
+    btn.disabled=false;
+    btn.textContent="Submit Payment Details";
+  }catch(err){
+    alert("Submission failed. Please try again.");
+    btn.disabled=false;
+    btn.textContent="Submit Payment Details";
+  }
 });
-</script></body></html>
+
+updatePlan();
+showNetwork();
+</script>
+</body>
+</html>
