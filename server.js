@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 // ======================================================
-// SETTINGS
+// CONFIG
 // ======================================================
 
 const REVIEW_TIME_MS = 15 * 60 * 1000;
@@ -18,6 +18,20 @@ const DEFAULT_SETTINGS = {
   upiId: "",
   qrImage: "",
   freeTrialEnabled: true,
+
+  paymentQrs: {
+    upi: "/assets/upi-phonepe.jpg",
+    trc20: "/assets/usdt-trc20.jpg",
+    bep20: "/assets/usdt-bep20.jpg",
+    eth: "/assets/eth-erc20.jpg"
+  },
+
+  paymentAddresses: {
+    upi: "+91 70676 03886",
+    trc20: "TGnAWoHjXizow51pMuwhwKiboYy22DC2bJ",
+    bep20: "0x4ab23A898208485D2bDa4C34D28C57649C1752fD",
+    eth: "0x4ab23A898208485D2bDa4C34D28C57649C1752fD"
+  },
 
   plans: [
     {
@@ -48,13 +62,6 @@ const DEFAULT_SETTINGS = {
 };
 
 // ======================================================
-// PARSE FORM DATA
-// ======================================================
-
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
-// ======================================================
 // DIRECTORIES
 // ======================================================
 
@@ -62,112 +69,127 @@ const publicDir = path.join(__dirname, "public");
 const uploadDir = path.join(publicDir, "uploads");
 const dataDir = path.join(__dirname, "data");
 
-const paymentsFile =
-  path.join(dataDir, "payments.json");
+const paymentsFile = path.join(
+  dataDir,
+  "payments.json"
+);
 
-const settingsFile =
-  path.join(dataDir, "settings.json");
+const settingsFile = path.join(
+  dataDir,
+  "settings.json"
+);
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, {
-    recursive: true
-  });
-}
+fs.mkdirSync(uploadDir, { recursive: true });
+fs.mkdirSync(dataDir, { recursive: true });
 
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, {
-    recursive: true
-  });
+if (!fs.existsSync(paymentsFile)) {
+  fs.writeFileSync(
+    paymentsFile,
+    "[]",
+    "utf8"
+  );
 }
 
 // ======================================================
-// SETTINGS HELPERS
+// MIDDLEWARE
 // ======================================================
 
-function cloneDefaultSettings() {
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
+
+app.use(express.json());
+
+app.use(
+  express.static(publicDir)
+);
+
+// ======================================================
+// HELPERS
+// ======================================================
+
+function cloneDefaults() {
   return JSON.parse(
     JSON.stringify(DEFAULT_SETTINGS)
   );
 }
 
-function normalizeSettings(settings) {
+function normalizeSettings(input) {
 
-  const defaults =
-    cloneDefaultSettings();
+  const defaults = cloneDefaults();
 
-  const result = {
+  const settings = {
     ...defaults,
-    ...(settings || {})
+    ...(input || {})
   };
 
-  if (
-    !Array.isArray(
-      result.plans
-    )
-  ) {
-    result.plans =
+  settings.telegram =
+    String(
+      settings.telegram || ""
+    );
+
+  settings.contactNumber =
+    String(
+      settings.contactNumber || ""
+    );
+
+  settings.upiId =
+    String(
+      settings.upiId || ""
+    );
+
+  settings.qrImage =
+    String(
+      settings.qrImage || ""
+    );
+
+  settings.freeTrialEnabled =
+    Boolean(
+      settings.freeTrialEnabled
+    );
+
+  settings.paymentQrs = {
+    ...defaults.paymentQrs,
+    ...(settings.paymentQrs || {})
+  };
+
+  settings.paymentAddresses = {
+    ...defaults.paymentAddresses,
+    ...(settings.paymentAddresses || {})
+  };
+
+  if (!Array.isArray(settings.plans)) {
+    settings.plans =
       defaults.plans;
   }
 
-  result.plans =
-    result.plans
+  settings.plans =
+    settings.plans
       .filter(
-        plan =>
-          plan &&
-          typeof plan === "object"
+        p =>
+          p &&
+          typeof p === "object"
       )
       .map(
-        plan => ({
-          id:
-            String(
-              plan.id || ""
-            ),
-          name:
-            String(
-              plan.name || ""
-            ),
-          amount:
-            Number(
-              plan.amount || 0
-            ),
+        p => ({
+          id: String(p.id || ""),
+          name: String(p.name || ""),
+          amount: Number(p.amount || 0),
           description:
             String(
-              plan.description || ""
+              p.description || ""
             )
         })
       )
       .filter(
-        plan =>
-          plan.id &&
-          plan.name
+        p =>
+          p.id &&
+          p.name
       );
 
-  result.freeTrialEnabled =
-    Boolean(
-      result.freeTrialEnabled
-    );
-
-  result.telegram =
-    String(
-      result.telegram || ""
-    );
-
-  result.contactNumber =
-    String(
-      result.contactNumber || ""
-    );
-
-  result.upiId =
-    String(
-      result.upiId || ""
-    );
-
-  result.qrImage =
-    String(
-      result.qrImage || ""
-    );
-
-  return result;
+  return settings;
 }
 
 function getSettings() {
@@ -181,7 +203,7 @@ function getSettings() {
     ) {
 
       const defaults =
-        cloneDefaultSettings();
+        cloneDefaults();
 
       fs.writeFileSync(
         settingsFile,
@@ -203,9 +225,7 @@ function getSettings() {
       );
 
     if (!data.trim()) {
-
-      return cloneDefaultSettings();
-
+      return cloneDefaults();
     }
 
     return normalizeSettings(
@@ -215,17 +235,17 @@ function getSettings() {
   } catch (error) {
 
     console.error(
-      "Could not read settings:",
+      "Settings read error:",
       error
     );
 
-    return cloneDefaultSettings();
+    return cloneDefaults();
   }
 }
 
 function saveSettings(settings) {
 
-  const cleanSettings =
+  const clean =
     normalizeSettings(
       settings
     );
@@ -233,38 +253,19 @@ function saveSettings(settings) {
   fs.writeFileSync(
     settingsFile,
     JSON.stringify(
-      cleanSettings,
+      clean,
       null,
       2
     ),
     "utf8"
   );
 
-  return cleanSettings;
+  return clean;
 }
 
-// Create settings file if missing
 saveSettings(
   getSettings()
 );
-
-// ======================================================
-// PAYMENT FILE
-// ======================================================
-
-if (!fs.existsSync(paymentsFile)) {
-
-  fs.writeFileSync(
-    paymentsFile,
-    "[]",
-    "utf8"
-  );
-
-}
-
-// ======================================================
-// PAYMENT HELPERS
-// ======================================================
 
 function getPayments() {
 
@@ -285,7 +286,7 @@ function getPayments() {
   } catch (error) {
 
     console.error(
-      "Could not read payments:",
+      "Payments read error:",
       error
     );
 
@@ -306,8 +307,25 @@ function savePayments(payments) {
   );
 }
 
+function escapeHTML(value) {
+
+  if (
+    value === undefined ||
+    value === null
+  ) {
+    return "";
+  }
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ======================================================
-// EXPIRY HELPERS
+// PAYMENT TIMER
 // ======================================================
 
 function getCreatedTime(payment) {
@@ -317,11 +335,9 @@ function getCreatedTime(payment) {
       payment.createdAt
     ).getTime();
 
-  if (Number.isNaN(time)) {
-    return Date.now();
-  }
-
-  return time;
+  return Number.isNaN(time)
+    ? Date.now()
+    : time;
 }
 
 function getExpiryTime(payment) {
@@ -343,14 +359,8 @@ function getRemainingMs(payment) {
 
 function isExpired(payment) {
 
-  if (
-    payment.status !==
-    "Pending"
-  ) {
-    return false;
-  }
-
   return (
+    payment.status === "Pending" &&
     getRemainingMs(payment) <= 0
   );
 }
@@ -362,30 +372,24 @@ function updateExpiredPayments() {
 
   let changed = false;
 
-  payments.forEach(
-    payment => {
+  payments.forEach(payment => {
 
-      if (
-        payment.status ===
-        "Pending"
-      ) {
+    if (
+      payment.status ===
+      "Pending" &&
+      getRemainingMs(payment) <= 0
+    ) {
 
-        if (
-          getRemainingMs(payment) <=
-          0
-        ) {
+      payment.status =
+        "Expired";
 
-          payment.status =
-            "Expired";
+      payment.expiredAt =
+        new Date().toISOString();
 
-          payment.expiredAt =
-            new Date().toISOString();
-
-          changed = true;
-        }
-      }
+      changed = true;
     }
-  );
+
+  });
 
   if (changed) {
     savePayments(payments);
@@ -394,50 +398,61 @@ function updateExpiredPayments() {
   return payments;
 }
 
+function formatAdminTime(ms) {
+
+  const seconds =
+    Math.max(
+      0,
+      Math.ceil(ms / 1000)
+    );
+
+  const minutes =
+    Math.floor(seconds / 60);
+
+  const remaining =
+    seconds % 60;
+
+  return (
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(remaining).padStart(2, "0")
+  );
+}
+
 // ======================================================
-// FILE UPLOAD
+// UPLOAD
 // ======================================================
 
 const storage =
   multer.diskStorage({
 
-    destination:
-      function(req, file, cb) {
+    destination(req, file, cb) {
+      cb(null, uploadDir);
+    },
 
-        cb(
-          null,
-          uploadDir
+    filename(req, file, cb) {
+
+      const ext =
+        path.extname(
+          file.originalname
         );
 
-      },
+      cb(
+        null,
+        "file-" +
+        Date.now() +
+        "-" +
+        Math.random()
+          .toString(36)
+          .slice(2, 9) +
+        ext
+      );
+    }
 
-    filename:
-      function(req, file, cb) {
-
-        const ext =
-          path.extname(
-            file.originalname
-          );
-
-        const name =
-          "file-" +
-          Date.now() +
-          "-" +
-          Math.random()
-            .toString(36)
-            .substring(2, 9) +
-          ext;
-
-        cb(
-          null,
-          name
-        );
-      }
   });
 
 const upload =
   multer({
-
     storage,
 
     limits: {
@@ -447,268 +462,252 @@ const upload =
   });
 
 // ======================================================
-// STATIC FILES
-// ======================================================
-
-app.use(
-  express.static(
-    publicDir
-  )
-);
-
-// ======================================================
 // HOME
 // ======================================================
 
-app.get(
-  "/",
-  (req, res) => {
+app.get("/", (req, res) => {
 
-    res.sendFile(
-      path.join(
-        __dirname,
-        "index.html"
-      )
-    );
+  res.sendFile(
+    path.join(
+      __dirname,
+      "index.html"
+    )
+  );
 
-  }
-);
+});
 
 // ======================================================
-// DYNAMIC PLANS PAGE
+// PLANS PAGE
 // ======================================================
 
-app.get(
-  "/plans",
-  (req, res) => {
+app.get("/plans", (req, res) => {
 
-    const settings =
-      getSettings();
+  const settings =
+    getSettings();
 
-    const planCards =
-      settings.plans
-        .map(
-          plan => `
+  const freeTrial =
+    settings.freeTrialEnabled
+      ? `
+        <div class="plan free">
+          <div class="tag">FREE TRIAL</div>
+          <h2>1 Day Free</h2>
+          <div class="price">FREE</div>
+          <p>
+            Try Vexora premium access
+            for 1 day.
+          </p>
 
-<div class="plan">
+          <a
+            class="btn"
+            href="https://wa.me/${escapeHTML(
+              settings.contactNumber
+            )}?text=Hi%20Vexora%2C%20I%20want%20the%201%20Day%20Free%20plan."
+            target="_blank"
+            rel="noopener"
+          >
+            Get Free Trial
+          </a>
+        </div>
+      `
+      : "";
 
-  <h2>
-    ${escapeHTML(
-      plan.name
-    )}
-  </h2>
+  const cards =
+    settings.plans
+      .map(
+        plan => `
+        <div class="plan">
 
-  <div class="price">
-    ₹${Number(
-      plan.amount
-    ).toLocaleString("en-IN")}
-  </div>
+          <div class="tag">
+            VEXORA PREMIUM
+          </div>
 
-  <p>
-    ${escapeHTML(
-      plan.description
-    )}
-  </p>
+          <h2>
+            ${escapeHTML(plan.name)}
+          </h2>
 
-  <a
-    class="btn"
-    href="/payment?plan=${encodeURIComponent(
-      plan.id
-    )}"
-  >
-    Select Plan
-  </a>
+          <div class="price">
+            ₹${Number(
+              plan.amount
+            ).toLocaleString("en-IN")}
+          </div>
 
-</div>
+          <p>
+            ${escapeHTML(
+              plan.description
+            )}
+          </p>
 
-          `
-        )
-        .join("");
+          <a
+            class="btn"
+            href="/payment?plan=${encodeURIComponent(
+              plan.id
+            )}"
+          >
+            Select Plan
+          </a>
 
-    const freeTrial =
-      settings.freeTrialEnabled
-        ? `
-
-<div class="plan free">
-
-  <h2>
-    1 Day Free
-  </h2>
-
-  <div class="price">
-    FREE
-  </div>
-
-  <p>
-    Try Vexora for 1 day.
-    Contact us to activate your free access.
-  </p>
-
-  <a
-    class="btn"
-    href="https://wa.me/${escapeHTML(
-      settings.contactNumber
-    )}?text=Hi%20Vexora%2C%20I%20want%20the%201%20Day%20Free%20plan."
-    target="_blank"
-    rel="noopener"
-  >
-    Get 1 Day Free
-  </a>
-
-</div>
-
+        </div>
         `
-        : "";
+      )
+      .join("");
 
-    res.send(`
-
+  res.send(`
 <!doctype html>
-
 <html lang="en">
-
 <head>
 
 <meta charset="utf-8">
 
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1"
+  content="width=device-width,initial-scale=1"
 >
 
-<title>Vexora — Plans</title>
+<title>Vexora Plans</title>
 
 <style>
 
-* {
-  box-sizing: border-box;
+*{
+  box-sizing:border-box;
 }
 
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  color: #f5f7ff;
-  background: #070d1d;
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Arial,sans-serif;
+  color:#f5f7ff;
+  background:
+    radial-gradient(
+      circle at top,
+      #152044,
+      #050b1d 55%
+    );
 }
 
-a {
-  text-decoration: none;
+.topbar{
+  padding:22px 28px;
+  border-bottom:1px solid #263455;
+  background:rgba(5,11,29,.9);
 }
 
-.topbar {
-  height: 90px;
-  display: flex;
-  align-items: center;
-  padding: 0 28px;
-  background: #080d1b;
-  border-bottom: 1px solid #202c49;
+.logo{
+  font-size:36px;
+  font-weight:900;
 }
 
-.logo {
-  font-size: 36px;
-  font-weight: 800;
+.logo span{
+  color:#8b5cff;
 }
 
-.logo span {
-  color: #8b5cff;
+.container{
+  max-width:1000px;
+  margin:auto;
+  padding:45px 20px 70px;
 }
 
-.container {
-  max-width: 950px;
-  margin: auto;
-  padding: 35px 20px 60px;
+.hero{
+  text-align:center;
+  margin-bottom:35px;
 }
 
-.hero {
-  text-align: center;
-  padding: 20px 10px 35px;
+.hero h1{
+  font-size:48px;
+  margin:0 0 12px;
 }
 
-.hero h1 {
-  font-size: 48px;
-  margin-bottom: 15px;
+.hero p{
+  color:#9eacd0;
+  font-size:18px;
 }
 
-.hero p {
-  color: #9eaccb;
-  font-size: 18px;
-  line-height: 1.6;
-}
-
-.plans {
-  display: grid;
+.plans{
+  display:grid;
   grid-template-columns:
-    repeat(2, 1fr);
-  gap: 18px;
+    repeat(2,1fr);
+  gap:20px;
 }
 
-.plan {
-  background: #101a31;
-  border: 1px solid #29395b;
-  border-radius: 22px;
-  padding: 28px;
+.plan{
+  position:relative;
+  padding:28px;
+  border-radius:24px;
+  background:
+    linear-gradient(
+      145deg,
+      #111d39,
+      #0a142b
+    );
+  border:1px solid #2b3d61;
+  box-shadow:
+    0 20px 50px
+    rgba(0,0,0,.25);
 }
 
-.plan.free {
-  border-color: #28875d;
+.plan.free{
+  border-color:#239c65;
 }
 
-.plan h2 {
-  margin: 0 0 10px;
-  font-size: 25px;
+.tag{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  background:#18274a;
+  color:#a879ff;
+  font-size:11px;
+  font-weight:800;
 }
 
-.price {
-  font-size: 38px;
-  font-weight: 800;
-  margin: 15px 0;
-  color: #a879ff;
+.free .tag{
+  color:#64e69b;
+  background:#103b2a;
 }
 
-.plan p {
-  min-height: 55px;
-  color: #9eaccb;
-  line-height: 1.6;
+.plan h2{
+  font-size:27px;
+  margin:18px 0 5px;
 }
 
-.btn {
-  display: block;
-  text-align: center;
-  padding: 16px;
-  border-radius: 14px;
+.price{
+  font-size:38px;
+  font-weight:900;
+  color:#a879ff;
+  margin:12px 0;
+}
+
+.plan p{
+  color:#9eacd0;
+  line-height:1.6;
+  min-height:50px;
+}
+
+.btn{
+  display:block;
+  text-align:center;
+  padding:15px;
+  margin-top:20px;
+  border-radius:14px;
+  color:white;
+  font-weight:800;
   background:
     linear-gradient(
       90deg,
-      #8b35ff,
-      #147cff
+      #8b2cff,
+      #087cff
     );
-  color: white;
-  font-weight: 800;
-  margin-top: 20px;
 }
 
-.free .btn {
-  background: #168653;
+.free .btn{
+  background:#168653;
 }
 
-.support {
-  text-align: center;
-  margin-top: 35px;
-}
-
-.support p {
-  color: #9eaccb;
-}
-
-@media(max-width:650px) {
-
-  .plans {
-    grid-template-columns: 1fr;
+@media(max-width:650px){
+  .plans{
+    grid-template-columns:1fr;
   }
 
-  .hero h1 {
-    font-size: 39px;
+  .hero h1{
+    font-size:38px;
   }
-
 }
 
 </style>
@@ -718,88 +717,53 @@ a {
 <body>
 
 <header class="topbar">
-
   <div class="logo">
     V<span>exora</span>
   </div>
-
 </header>
 
 <main class="container">
 
 <section class="hero">
-
   <h1>
-    Choose Your
-    <span style="color:#8b5cff">
-      Plan
-    </span>
+    Choose Your Plan
   </h1>
 
   <p>
-    Select your preferred Vexora membership plan.
+    Select your Vexora premium membership.
   </p>
-
 </section>
 
 <section class="plans">
-
   ${freeTrial}
-
-  ${planCards}
-
-</section>
-
-<section class="support">
-
-  <p>
-    Need help with a plan?
-  </p>
-
-  <a
-    class="btn"
-    href="${escapeHTML(
-      settings.telegram
-    )}"
-    target="_blank"
-    rel="noopener"
-  >
-    Telegram Support
-  </a>
-
+  ${cards}
 </section>
 
 </main>
 
 </body>
-
 </html>
+  `);
 
-    `);
-  }
-);
+});
 
 // ======================================================
-// PAYMENT
+// PAYMENT PAGE
 // ======================================================
 
-app.get(
-  "/payment",
-  (req, res) => {
+app.get("/payment", (req, res) => {
 
-    res.sendFile(
-      path.join(
-        __dirname,
-        "payment.html"
-      )
-    );
+  res.sendFile(
+    path.join(
+      __dirname,
+      "payment.html"
+    )
+  );
 
-  }
-);
+});
 
 // ======================================================
 // SETTINGS API
-// Payment page can use this for QR/contact/UPI.
 // ======================================================
 
 app.get(
@@ -809,46 +773,25 @@ app.get(
     const settings =
       getSettings();
 
-    res.json({
-      telegram:
-        settings.telegram,
-
-      contactNumber:
-        settings.contactNumber,
-
-      upiId:
-        settings.upiId,
-
-      qrImage:
-        settings.qrImage,
-
-      freeTrialEnabled:
-        settings.freeTrialEnabled,
-
-      plans:
-        settings.plans
-    });
+    res.json(settings);
 
   }
 );
 
 // ======================================================
-// SUBMIT
+// SUBMIT PAGE
 // ======================================================
 
-app.get(
-  "/submit",
-  (req, res) => {
+app.get("/submit", (req, res) => {
 
-    res.sendFile(
-      path.join(
-        __dirname,
-        "submit.html"
-      )
-    );
+  res.sendFile(
+    path.join(
+      __dirname,
+      "submit.html"
+    )
+  );
 
-  }
-);
+});
 
 // ======================================================
 // SUBMIT PAYMENT
@@ -865,11 +808,11 @@ app.post(
     const payment = {
 
       id:
-        Date.now().toString() +
+        Date.now() +
         "-" +
         Math.random()
           .toString(36)
-          .substring(2, 8),
+          .slice(2, 8),
 
       plan:
         req.body.plan || "",
@@ -908,55 +851,15 @@ app.post(
     const payments =
       getPayments();
 
-    payments.unshift(
-      payment
-    );
+    payments.unshift(payment);
 
-    savePayments(
-      payments
-    );
-
-    console.log(
-      "Payment submission received"
-    );
-
-    console.log(
-      "Plan:",
-      payment.plan
-    );
-
-    console.log(
-      "Amount:",
-      payment.amount
-    );
-
-    console.log(
-      "UTR:",
-      payment.transactionId
-    );
-
-    console.log(
-      "TradingView:",
-      payment.tradingview
-    );
-
-    console.log(
-      "Telegram:",
-      payment.telegram
-    );
-
-    console.log(
-      "Proof:",
-      payment.proof
-    );
+    savePayments(payments);
 
     const settings =
       getSettings();
 
     res.send(`
-
 <!doctype html>
-
 <html lang="en">
 
 <head>
@@ -968,189 +871,158 @@ app.post(
   content="width=device-width,initial-scale=1"
 >
 
-<title>
-  Payment Request Submitted
-</title>
+<title>Payment Submitted</title>
 
 <style>
 
-* {
-  box-sizing: border-box;
+*{
+  box-sizing:border-box;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  background: #050b1d;
-  color: #f4f7ff;
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  font-family:Arial,sans-serif;
+  background:#050b1d;
+  color:white;
 }
 
-.success-card {
-  width: 100%;
-  max-width: 430px;
-  padding: 40px 28px;
-  text-align: center;
-  border-radius: 24px;
-  background: #0d1a36;
-  border:
-    1px solid
-    rgba(139,92,255,.35);
+.card{
+  width:100%;
+  max-width:440px;
+  padding:35px 25px;
+  text-align:center;
+  border-radius:25px;
+  background:#0d1a36;
+  border:1px solid #3a3470;
   box-shadow:
-    0 20px 60px
-    rgba(0,0,0,.35);
+    0 25px 70px
+    rgba(0,0,0,.4);
 }
 
-.success-icon {
-  width: 70px;
-  height: 70px;
-  margin: 0 auto 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 38px;
-  font-weight: bold;
-  color: white;
+.icon{
+  width:70px;
+  height:70px;
+  margin:auto auto 20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
   background:
     linear-gradient(
       135deg,
       #8b2cff,
       #087cff
     );
+  font-size:38px;
+  font-weight:900;
 }
 
-h1 {
-  margin: 0 0 14px;
-  font-size: 27px;
+h1{
+  font-size:27px;
+  margin:0 0 20px;
 }
 
-.plan {
-  margin-top: 15px;
-  padding: 16px;
-  border-radius: 14px;
-  background: #071126;
-  border:
-    1px solid
-    rgba(139,92,255,.30);
+.plan{
+  padding:17px;
+  border-radius:15px;
+  background:#071126;
+  border:1px solid #343f69;
 }
 
-.plan-label {
-  color: #9eacd0;
-  font-size: 13px;
+.plan-name{
+  font-size:21px;
+  font-weight:800;
 }
 
-.plan-name {
-  margin-top: 5px;
-  font-size: 21px;
-  font-weight: 800;
+.amount{
+  margin-top:5px;
+  color:#a879ff;
+  font-size:27px;
+  font-weight:900;
 }
 
-.amount {
-  margin-top: 5px;
-  color: #a879ff;
-  font-size: 27px;
-  font-weight: 800;
+.message{
+  color:#a9b8dc;
+  line-height:1.6;
+  margin:20px 0;
 }
 
-.message {
-  margin: 20px 0 15px;
-  color: #a9b8dc;
-  font-size: 16px;
-  line-height: 1.6;
+.timer{
+  font-size:34px;
+  font-weight:900;
+  margin-top:5px;
 }
 
-.timer-label {
-  color: #9eacd0;
-  font-size: 13px;
-  margin-top: 18px;
+.timer.expired{
+  color:#ff7d87;
 }
 
-.timer {
-  margin-top: 6px;
-  font-size: 32px;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: 1px;
+.status{
+  display:none;
+  margin-top:18px;
+  padding:13px;
+  border-radius:12px;
+  font-weight:800;
 }
 
-.timer.expired {
-  color: #ff7d87;
+.approved{
+  background:#103923;
+  color:#65e99a;
 }
 
-.manual-review {
-  display: none;
-  margin-top: 18px;
-  padding: 16px;
-  border-radius: 15px;
-  background: #27181a;
-  border:
-    1px solid
-    rgba(255,100,110,.30);
+.rejected{
+  background:#42191d;
+  color:#ff7d87;
 }
 
-.manual-review h2 {
-  margin: 0 0 8px;
-  font-size: 18px;
-  color: #ff9aa3;
+.manual{
+  display:none;
+  margin-top:18px;
+  padding:16px;
+  border-radius:15px;
+  background:#27181a;
 }
 
-.manual-review p {
-  margin: 0 0 14px;
-  color: #c5cad8;
-  font-size: 14px;
-  line-height: 1.5;
+.manual h2{
+  color:#ff9aa3;
+  margin:0 0 8px;
 }
 
-.telegram-btn {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  text-decoration: none;
-  color: white;
-  font-weight: 800;
-  background: #168dcc;
+.manual p{
+  color:#c5cad8;
+  line-height:1.5;
 }
 
-.ok-btn {
-  width: 100%;
-  border: 0;
-  border-radius: 14px;
-  padding: 16px 20px;
-  margin-top: 22px;
-  font-size: 18px;
-  font-weight: 700;
-  color: white;
-  cursor: pointer;
+.telegram{
+  display:block;
+  padding:14px;
+  border-radius:12px;
+  background:#168dcc;
+  color:white;
+  text-decoration:none;
+  font-weight:800;
+}
+
+.ok{
+  width:100%;
+  margin-top:20px;
+  padding:15px;
+  border:0;
+  border-radius:14px;
   background:
     linear-gradient(
       135deg,
       #8b2cff,
       #087cff
     );
-}
-
-.status-message {
-  display: none;
-  margin-top: 18px;
-  padding: 14px;
-  border-radius: 13px;
-  font-weight: 700;
-}
-
-.status-approved {
-  background: #103923;
-  color: #65e99a;
-}
-
-.status-rejected {
-  background: #42191d;
-  color: #ff7d87;
+  color:white;
+  font-size:17px;
+  font-weight:800;
 }
 
 </style>
@@ -1159,350 +1031,265 @@ h1 {
 
 <body>
 
-<div class="success-card">
+<div class="card">
 
-  <div class="success-icon">
-    ✓
-  </div>
+<div class="icon">✓</div>
 
-  <h1>
-    Payment Request Submitted
-  </h1>
+<h1>
+Payment Request Submitted
+</h1>
 
-  <div class="plan">
+<div class="plan">
 
-    <div class="plan-label">
-      Selected Plan
-    </div>
+<div class="plan-name">
+${escapeHTML(payment.plan)}
+</div>
 
-    <div class="plan-name">
-      ${escapeHTML(
-        payment.plan
-      )}
-    </div>
+<div class="amount">
+₹${Number(
+  payment.amount || 0
+).toLocaleString("en-IN")}
+</div>
 
-    <div class="amount">
-      ₹${Number(
-        payment.amount || 0
-      ).toLocaleString("en-IN")}
-    </div>
+</div>
 
-  </div>
+<p class="message">
+Your payment request has been submitted.
+Please wait while we verify your payment.
+</p>
 
-  <p class="message">
+<div>
+Verification time remaining
+</div>
 
-    Your payment request has
-    been submitted successfully.
-    Please wait while we verify
-    your payment.
+<div id="timer" class="timer">
+15:00
+</div>
 
-  </p>
+<div
+  id="status"
+  class="status"
+></div>
 
-  <div class="timer-label">
-    Verification time remaining
-  </div>
+<div
+  id="manual"
+  class="manual"
+>
 
-  <div
-    id="timer"
-    class="timer"
-  >
-    15:00
-  </div>
+<h2>
+Manual Review Required
+</h2>
 
-  <div
-    id="statusMessage"
-    class="status-message"
-  ></div>
+<p>
+Verification time has expired.
+Please contact us on Telegram.
+</p>
 
-  <div
-    id="manualReview"
-    class="manual-review"
-  >
+<a
+  class="telegram"
+  href="${escapeHTML(
+    settings.telegram
+  )}"
+  target="_blank"
+  rel="noopener"
+>
+Contact on Telegram
+</a>
 
-    <h2>
-      Manual Review Required
-    </h2>
+</div>
 
-    <p>
-      Verification time has expired.
-      Please contact us on Telegram
-      for manual assistance.
-    </p>
-
-    <a
-      class="telegram-btn"
-      href="${escapeHTML(
-        settings.telegram
-      )}"
-      target="_blank"
-      rel="noopener"
-    >
-      Contact on Telegram
-    </a>
-
-  </div>
-
-  <button
-    class="ok-btn"
-    onclick="window.location.href='/'"
-  >
-    OK
-  </button>
+<button
+  class="ok"
+  onclick="location.href='/'"
+>
+OK
+</button>
 
 </div>
 
 <script>
 
 const paymentId =
-  ${JSON.stringify(
-    payment.id
-  )};
+${JSON.stringify(payment.id)};
 
 const expiresAt =
-  ${JSON.stringify(
-    payment.expiresAt
-  )};
+${JSON.stringify(payment.expiresAt)};
 
 const timer =
-  document.getElementById(
-    "timer"
-  );
+document.getElementById("timer");
 
-const manualReview =
-  document.getElementById(
-    "manualReview"
-  );
+const status =
+document.getElementById("status");
 
-const statusMessage =
-  document.getElementById(
-    "statusMessage"
-  );
+const manual =
+document.getElementById("manual");
 
 let finished = false;
 
-function formatTime(ms) {
+function showStatus(value){
 
-  const totalSeconds =
-    Math.max(
-      0,
-      Math.ceil(
-        ms / 1000
-      )
-    );
-
-  const minutes =
-    Math.floor(
-      totalSeconds / 60
-    );
-
-  const seconds =
-    totalSeconds % 60;
-
-  return (
-    String(minutes)
-      .padStart(2, "0") +
-    ":" +
-    String(seconds)
-      .padStart(2, "0")
-  );
-}
-
-function showExpired() {
-
-  timer.textContent =
-    "00:00";
-
-  timer.classList.add(
-    "expired"
-  );
-
-  manualReview.style.display =
-    "block";
-}
-
-function showStatus(status) {
-
-  if (
-    status ===
-    "Approved"
-  ) {
+  if(value === "Approved"){
 
     finished = true;
 
-    statusMessage.textContent =
+    status.textContent =
       "✓ Payment Approved";
 
-    statusMessage.className =
-      "status-message status-approved";
+    status.className =
+      "status approved";
 
-    statusMessage.style.display =
+    status.style.display =
       "block";
-
-    manualReview.style.display =
-      "none";
 
     timer.style.display =
       "none";
 
-    return;
+    manual.style.display =
+      "none";
+
   }
 
-  if (
-    status ===
-    "Rejected"
-  ) {
+  if(value === "Rejected"){
 
     finished = true;
 
-    statusMessage.textContent =
+    status.textContent =
       "✕ Payment Rejected";
 
-    statusMessage.className =
-      "status-message status-rejected";
+    status.className =
+      "status rejected";
 
-    statusMessage.style.display =
+    status.style.display =
       "block";
 
     timer.style.display =
       "none";
 
-    manualReview.style.display =
+    manual.style.display =
       "block";
 
-    manualReview.querySelector(
-      "h2"
-    ).textContent =
+    manual.querySelector("h2")
+      .textContent =
       "Payment Rejected";
 
-    manualReview.querySelector(
-      "p"
-    ).textContent =
-      "Your payment request was rejected. Please contact us on Telegram for assistance.";
+    manual.querySelector("p")
+      .textContent =
+      "Your payment was rejected. Please contact us on Telegram.";
 
-    return;
   }
 
-  if (
-    status ===
-    "Expired"
-  ) {
+  if(value === "Expired"){
 
     finished = true;
 
-    showExpired();
+    timer.textContent =
+      "00:00";
+
+    timer.classList.add("expired");
+
+    manual.style.display =
+      "block";
 
   }
+
 }
 
-async function checkStatus() {
+async function checkStatus(){
 
-  if (finished) {
-    return;
-  }
+  if(finished) return;
 
-  try {
+  try{
 
     const response =
       await fetch(
         "/payment-status/" +
-        encodeURIComponent(
-          paymentId
-        ),
+        encodeURIComponent(paymentId),
         {
-          cache:
-            "no-store"
+          cache:"no-store"
         }
       );
 
-    if (!response.ok) {
-      return;
-    }
+    if(!response.ok) return;
 
     const data =
       await response.json();
 
-    showStatus(
-      data.status
-    );
+    showStatus(data.status);
 
-  } catch (error) {
+  }catch(error){
 
-    console.error(
-      "Status check failed:",
-      error
-    );
+    console.error(error);
 
   }
+
 }
 
-function updateTimer() {
+function updateTimer(){
 
-  if (finished) {
-    return;
-  }
+  if(finished) return;
 
   const remaining =
-    new Date(
-      expiresAt
-    ).getTime() -
+    new Date(expiresAt).getTime() -
     Date.now();
 
-  if (remaining <= 0) {
+  if(remaining <= 0){
 
-    showExpired();
+    timer.textContent =
+      "00:00";
+
+    timer.classList.add("expired");
+
+    manual.style.display =
+      "block";
 
     checkStatus();
 
     return;
   }
 
-  timer.textContent =
-    formatTime(
-      remaining
+  const seconds =
+    Math.ceil(
+      remaining / 1000
     );
+
+  const min =
+    Math.floor(
+      seconds / 60
+    );
+
+  const sec =
+    seconds % 60;
+
+  timer.textContent =
+    String(min).padStart(2,"0") +
+    ":" +
+    String(sec).padStart(2,"0");
+
 }
 
 updateTimer();
 
-const timerInterval =
-  setInterval(
-    updateTimer,
-    1000
-  );
+setInterval(
+  updateTimer,
+  1000
+);
 
-const statusInterval =
-  setInterval(
-    checkStatus,
-    3000
-  );
-
-window.addEventListener(
-  "beforeunload",
-  function() {
-
-    clearInterval(
-      timerInterval
-    );
-
-    clearInterval(
-      statusInterval
-    );
-
-  }
+setInterval(
+  checkStatus,
+  3000
 );
 
 </script>
 
 </body>
-
 </html>
-
     `);
+
   }
 );
 
 // ======================================================
-// PAYMENT STATUS API
+// PAYMENT STATUS
 // ======================================================
 
 app.get(
@@ -1519,13 +1306,12 @@ app.get(
           req.params.id
       );
 
-    if (!payment) {
+    if(!payment){
 
       return res
         .status(404)
         .json({
-          status:
-            "Not Found"
+          status:"Not Found"
         });
 
     }
@@ -1549,7 +1335,7 @@ app.get(
 );
 
 // ======================================================
-// ADMIN DASHBOARD + SETTINGS
+// ADMIN DASHBOARD
 // ======================================================
 
 app.get(
@@ -1563,344 +1349,235 @@ app.get(
       getSettings();
 
     const rows =
-      payments
-        .map(
-          payment => {
+      payments.map(payment => {
 
-            const date =
-              new Date(
-                payment.createdAt
-              ).toLocaleString();
+        let statusClass =
+          "pending";
 
-            let statusClass =
-              "pending";
+        if(payment.status === "Approved")
+          statusClass = "approved";
 
-            if (
-              payment.status ===
-              "Approved"
-            ) {
-              statusClass =
-                "approved";
-            }
+        if(payment.status === "Rejected")
+          statusClass = "rejected";
 
-            if (
-              payment.status ===
-              "Rejected"
-            ) {
-              statusClass =
-                "rejected";
-            }
+        if(payment.status === "Expired")
+          statusClass = "expired";
 
-            if (
-              payment.status ===
-              "Expired"
-            ) {
-              statusClass =
-                "expired";
-            }
+        let action = "";
 
-            let actionHTML =
-              "";
+        if(payment.status === "Pending"){
 
-            if (
-              payment.status ===
-              "Pending"
-            ) {
+          action = `
+          <div class="timer">
+            <span
+              class="countdown"
+              data-expiry="${escapeHTML(
+                payment.expiresAt
+              )}"
+            >
+              ${formatAdminTime(
+                getRemainingMs(payment)
+              )}
+            </span>
+          </div>
 
-              const remaining =
-                getRemainingMs(
-                  payment
-                );
+          <div class="actions">
 
-              actionHTML = `
+            <form
+              method="POST"
+              action="/admin/payment/${encodeURIComponent(
+                payment.id
+              )}/approve"
+            >
+              <button class="approve">
+                ✓ Approve
+              </button>
+            </form>
 
-<div class="admin-timer">
+            <form
+              method="POST"
+              action="/admin/payment/${encodeURIComponent(
+                payment.id
+              )}/reject"
+            >
+              <button class="reject">
+                ✕ Reject
+              </button>
+            </form>
 
-  <span
-    class="countdown"
-    data-expiry="${escapeHTML(
-      payment.expiresAt
-    )}"
-  >
-    ${formatAdminTime(
-      remaining
-    )}
-  </span>
+          </div>
+          `;
 
-</div>
+        }else if(
+          payment.status === "Expired"
+        ){
 
-<div class="actions">
+          action = `
+            <div class="manual">
+              <strong>
+                Manual Review
+              </strong>
 
-<form
-  method="POST"
-  action="/admin/payment/${encodeURIComponent(
-    payment.id
-  )}/approve"
->
+              <a
+                href="${escapeHTML(
+                  settings.telegram
+                )}"
+                target="_blank"
+              >
+                Telegram
+              </a>
+            </div>
+          `;
 
-<button
-  class="approve"
-  type="submit"
->
-  ✓ Approve
-</button>
+        }else{
 
-</form>
+          action = `
+            <span class="done">
+              ${
+                payment.status === "Approved"
+                  ? "✓ Approved"
+                  : "✕ Rejected"
+              }
+            </span>
+          `;
+        }
 
-<form
-  method="POST"
-  action="/admin/payment/${encodeURIComponent(
-    payment.id
-  )}/reject"
->
+        const proof =
+          payment.proof
+            ? `
+              <a
+                class="proof"
+                href="${escapeHTML(
+                  payment.proof
+                )}"
+                target="_blank"
+              >
+                View Proof
+              </a>
+            `
+            : "No Proof";
 
-<button
-  class="reject"
-  type="submit"
->
-  ✕ Reject
-</button>
-
-</form>
-
-</div>
-
-              `;
-
-            } else if (
-              payment.status ===
-              "Expired"
-            ) {
-
-              actionHTML = `
-
-<div class="manual-admin">
-
-<strong>
-Manual Review
-</strong>
-
-<a
-  href="${escapeHTML(
-    settings.telegram
-  )}"
-  target="_blank"
-  rel="noopener"
->
-Telegram
-</a>
-
-</div>
-
-              `;
-
-            } else {
-
-              actionHTML = `
-
-<span class="action-done">
-
-${
-  payment.status ===
-  "Approved"
-
-    ? "✓ Approved"
-
-    : "✕ Rejected"
-}
-
-</span>
-
-              `;
-
-            }
-
-            const proofHTML =
-              payment.proof
-
-                ? `
-
-<a
-  class="proof-btn"
-  href="${escapeHTML(
-    payment.proof
-  )}"
-  target="_blank"
-  rel="noopener"
->
-View Proof
-</a>
-
-                  `
-
-                : `
-
-<span class="no-proof">
-No Proof
-</span>
-
-                  `;
-
-            return `
-
+        return `
 <tr>
 
 <td>
-<strong>
-${escapeHTML(
-  payment.plan
-)}
-</strong>
+  <strong>
+    ${escapeHTML(payment.plan)}
+  </strong>
+</td>
+
+<td class="amount">
+  ₹${Number(
+    payment.amount || 0
+  ).toLocaleString("en-IN")}
 </td>
 
 <td>
-<strong class="amount-text">
-₹${Number(
-  payment.amount || 0
-).toLocaleString("en-IN")}
-</strong>
+  ${escapeHTML(
+    payment.transactionId
+  )}
 </td>
 
 <td>
-<strong>
-${escapeHTML(
-  payment.transactionId
-)}
-</strong>
+  ${escapeHTML(
+    payment.tradingview
+  )}
 </td>
 
 <td>
-${escapeHTML(
-  payment.tradingview
-)}
+  ${escapeHTML(
+    payment.telegram
+  )}
 </td>
 
 <td>
-${escapeHTML(
-  payment.telegram
-)}
+  ${proof}
 </td>
 
 <td>
-${proofHTML}
+  <span class="status ${statusClass}">
+    ${escapeHTML(
+      payment.status
+    )}
+  </span>
 </td>
 
 <td>
-
-<span
-class="status ${statusClass}"
->
-${escapeHTML(
-  payment.status
-)}
-</span>
-
+  ${escapeHTML(
+    new Date(
+      payment.createdAt
+    ).toLocaleString()
+  )}
 </td>
 
 <td>
-${escapeHTML(
-  date
-)}
-</td>
-
-<td>
-${actionHTML}
+  ${action}
 </td>
 
 </tr>
-
-            `;
-          }
-        )
-        .join("");
+        `;
+      }).join("");
 
     const total =
       payments.length;
 
     const pending =
       payments.filter(
-        p =>
-          p.status ===
-          "Pending"
+        p => p.status === "Pending"
       ).length;
 
     const approved =
       payments.filter(
-        p =>
-          p.status ===
-          "Approved"
+        p => p.status === "Approved"
       ).length;
 
     const rejected =
       payments.filter(
-        p =>
-          p.status ===
-          "Rejected"
+        p => p.status === "Rejected"
       ).length;
 
     const expired =
       payments.filter(
-        p =>
-          p.status ===
-          "Expired"
+        p => p.status === "Expired"
       ).length;
 
     const planRows =
-      settings.plans
-        .map(
-          plan => `
-
+      settings.plans.map(plan => `
 <tr>
 
 <td>
-
 <input
-  class="setting-input"
+  class="input"
   type="text"
   name="planName"
-  form="edit-${escapeHTML(
-    plan.id
-  )}"
-  value="${escapeHTML(
-    plan.name
-  )}"
+  form="edit-${escapeHTML(plan.id)}"
+  value="${escapeHTML(plan.name)}"
   required
 >
-
 </td>
 
 <td>
-
 <input
-  class="setting-input small"
+  class="input small"
   type="number"
-  min="0"
   name="planAmount"
-  form="edit-${escapeHTML(
-    plan.id
-  )}"
-  value="${Number(
-    plan.amount
-  )}"
+  form="edit-${escapeHTML(plan.id)}"
+  value="${Number(plan.amount)}"
+  min="0"
   required
 >
-
 </td>
 
 <td>
-
 <input
-  class="setting-input"
+  class="input"
   type="text"
   name="planDescription"
-  form="edit-${escapeHTML(
-    plan.id
-  )}"
+  form="edit-${escapeHTML(plan.id)}"
   value="${escapeHTML(
     plan.description
   )}"
 >
-
 </td>
 
 <td>
@@ -1908,19 +1585,14 @@ ${actionHTML}
 <div class="plan-actions">
 
 <form
-  id="edit-${escapeHTML(
-    plan.id
-  )}"
+  id="edit-${escapeHTML(plan.id)}"
   method="POST"
   action="/admin/settings/plan/${encodeURIComponent(
     plan.id
   )}/edit"
 >
 
-<button
-  class="save-btn"
-  type="submit"
->
+<button class="save">
 Save
 </button>
 
@@ -1934,10 +1606,7 @@ Save
   onsubmit="return confirm('Delete this plan?')"
 >
 
-<button
-  class="delete-btn"
-  type="submit"
->
+<button class="delete">
 Delete
 </button>
 
@@ -1948,15 +1617,10 @@ Delete
 </td>
 
 </tr>
-
-          `
-        )
-        .join("");
+      `).join("");
 
     res.send(`
-
 <!doctype html>
-
 <html lang="en">
 
 <head>
@@ -1968,887 +1632,444 @@ Delete
   content="width=device-width,initial-scale=1"
 >
 
-<title>
-Vexora Admin
-</title>
+<title>Vexora Admin Dashboard</title>
 
 <style>
 
-* {
-  box-sizing:
-    border-box;
+*{
+  box-sizing:border-box;
 }
 
-body {
-
-  margin: 0;
-
-  min-height: 100vh;
-
+body{
+  margin:0;
+  min-height:100vh;
   font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
-
+    Arial,Helvetica,sans-serif;
+  color:#f4f7ff;
   background:
-    #050b1d;
-
-  color:
-    #f4f7ff;
-
+    radial-gradient(
+      circle at top right,
+      #182650 0,
+      #050b1d 42%
+    );
 }
 
-.topbar {
-
-  padding:
-    22px 28px;
-
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  padding:20px 28px;
   background:
-    #071025;
-
+    rgba(5,11,29,.88);
+  backdrop-filter:blur(18px);
   border-bottom:
     1px solid
-    rgba(
-      139,
-      92,
-      255,
-      .25
-    );
-
+    rgba(139,92,255,.22);
 }
 
-.logo {
-
-  font-size:
-    36px;
-
-  font-weight:
-    800;
-
+.logo{
+  font-size:34px;
+  font-weight:900;
 }
 
-.logo span {
-
+.logo span{
   background:
     linear-gradient(
       90deg,
       #a12cff,
       #087cff
     );
-
-  -webkit-background-clip:
-    text;
-
-  background-clip:
-    text;
-
-  color:
-    transparent;
-
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
 }
 
-.container {
-
-  width:
-    100%;
-
-  max-width:
-    1500px;
-
-  margin:
-    auto;
-
-  padding:
-    30px 20px 60px;
-
+.container{
+  max-width:1550px;
+  margin:auto;
+  padding:30px 20px 70px;
 }
 
-.header {
-
-  margin-bottom:
-    25px;
-
+.header{
+  margin-bottom:25px;
 }
 
-.header h1 {
-
-  margin:
-    0 0 8px;
-
-  font-size:
-    34px;
-
+.header h1{
+  margin:0 0 8px;
+  font-size:36px;
 }
 
-.header p {
-
-  margin:
-    0;
-
-  color:
-    #9eacd0;
-
+.header p{
+  margin:0;
+  color:#91a0c2;
 }
 
-.stats {
-
-  display:
-    flex;
-
-  gap:
-    14px;
-
-  flex-wrap:
-    wrap;
-
-  margin-bottom:
-    25px;
-
-}
-
-.stat {
-
-  min-width:
-    150px;
-
-  padding:
-    20px;
-
-  border-radius:
-    18px;
-
-  background:
-    #0d1a35;
-
-  border:
-    1px solid
-    rgba(
-      125,
-      153,
-      220,
-      .25
-    );
-
-}
-
-.stat-number {
-
-  display:
-    block;
-
-  font-size:
-    28px;
-
-  font-weight:
-    800;
-
-}
-
-.stat-label {
-
-  color:
-    #9eacd0;
-
-  font-size:
-    14px;
-
-}
-
-.panel {
-
-  margin-bottom:
-    25px;
-
-  padding:
-    24px;
-
-  border-radius:
-    20px;
-
-  background:
-    #0d1a35;
-
-  border:
-    1px solid
-    rgba(
-      125,
-      153,
-      220,
-      .25
-    );
-
-}
-
-.panel h2 {
-
-  margin:
-    0 0 18px;
-
-  font-size:
-    24px;
-
-}
-
-.settings-grid {
-
-  display:
-    grid;
-
+.stats{
+  display:grid;
   grid-template-columns:
-    repeat(
-      2,
-      minmax(
-        0,
-        1fr
-      )
+    repeat(5,1fr);
+  gap:14px;
+  margin-bottom:25px;
+}
+
+.stat{
+  padding:20px;
+  border-radius:20px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(20,34,66,.92),
+      rgba(10,19,40,.92)
     );
-
-  gap:
-    16px;
-
-}
-
-.setting-group {
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  gap:
-    7px;
-
-}
-
-.setting-group.full {
-
-  grid-column:
-    1 / -1;
-
-}
-
-.setting-group label {
-
-  color:
-    #cbd7f4;
-
-  font-size:
-    14px;
-
-  font-weight:
-    700;
-
-}
-
-.setting-input {
-
-  width:
-    100%;
-
-  padding:
-    12px 13px;
-
   border:
     1px solid
-    #2b3d61;
+    rgba(111,140,205,.22);
+  box-shadow:
+    0 15px 40px
+    rgba(0,0,0,.18);
+}
 
-  border-radius:
-    10px;
+.stat-number{
+  display:block;
+  font-size:30px;
+  font-weight:900;
+}
 
+.stat-label{
+  color:#8e9dbd;
+  font-size:13px;
+}
+
+.panel{
+  margin-bottom:25px;
+  padding:25px;
+  border-radius:22px;
   background:
-    #071126;
-
-  color:
-    #fff;
-
-  outline:
-    none;
-
-}
-
-.setting-input:focus {
-
-  border-color:
-    #8b5cff;
-
-}
-
-.setting-input.small {
-
-  max-width:
-    150px;
-
-}
-
-.checkbox-row {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    10px;
-
-  padding:
-    13px;
-
-  border-radius:
-    10px;
-
-  background:
-    #071126;
-
-}
-
-.checkbox-row input {
-
-  width:
-    18px;
-
-  height:
-    18px;
-
-}
-
-.save-settings {
-
-  margin-top:
-    18px;
-
+    rgba(13,26,53,.88);
   border:
-    0;
+    1px solid
+    rgba(111,140,205,.22);
+}
 
-  padding:
-    13px 20px;
+.panel h2{
+  margin:0 0 20px;
+  font-size:23px;
+}
 
-  border-radius:
-    10px;
+.settings{
+  display:grid;
+  grid-template-columns:
+    repeat(2,1fr);
+  gap:15px;
+}
 
+.group{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.group.full{
+  grid-column:1/-1;
+}
+
+.group label{
+  color:#cbd7f4;
+  font-size:13px;
+  font-weight:700;
+}
+
+.input{
+  width:100%;
+  padding:12px 13px;
+  border:1px solid #293d65;
+  border-radius:11px;
+  outline:none;
+  background:#071126;
+  color:#fff;
+}
+
+.input:focus{
+  border-color:#8b5cff;
+}
+
+.small{
+  max-width:150px;
+}
+
+.checkbox{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:13px;
+  border-radius:11px;
+  background:#071126;
+}
+
+.checkbox input{
+  width:18px;
+  height:18px;
+}
+
+.primary{
+  margin-top:18px;
+  border:0;
+  padding:13px 20px;
+  border-radius:11px;
+  color:white;
+  font-weight:800;
+  cursor:pointer;
   background:
     linear-gradient(
       90deg,
       #8b2cff,
       #087cff
     );
-
-  color:
-    white;
-
-  font-weight:
-    800;
-
-  cursor:
-    pointer;
-
 }
 
-.qr-preview {
-
-  margin-top:
-    10px;
-
-  max-width:
-    180px;
-
-  max-height:
-    180px;
-
-  border-radius:
-    12px;
-
+.table-wrap{
+  overflow:auto;
+  border-radius:20px;
   border:
     1px solid
-    #34486f;
-
+    rgba(111,140,205,.22);
+  background:#0b1730;
 }
 
-.table-wrap {
-
-  overflow-x:
-    auto;
-
-  background:
-    #0d1a35;
-
-  border:
-    1px solid
-    rgba(
-      125,
-      153,
-      220,
-      .25
-    );
-
-  border-radius:
-    20px;
-
+table{
+  width:100%;
+  min-width:1400px;
+  border-collapse:collapse;
 }
 
-table {
-
-  width:
-    100%;
-
-  border-collapse:
-    collapse;
-
-  min-width:
-    1350px;
-
+th{
+  padding:16px;
+  text-align:left;
+  color:#8e9dbd;
+  font-size:12px;
+  text-transform:uppercase;
+  border-bottom:1px solid #263756;
 }
 
-th {
-
-  text-align:
-    left;
-
-  padding:
-    16px;
-
-  color:
-    #aebce0;
-
-  font-size:
-    13px;
-
-  text-transform:
-    uppercase;
-
-  border-bottom:
-    1px solid
-    #25385c;
-
+td{
+  padding:16px;
+  border-bottom:1px solid #192a48;
+  color:#dce5fb;
+  vertical-align:middle;
 }
 
-td {
-
-  padding:
-    16px;
-
-  border-bottom:
-    1px solid
-    #1b2b49;
-
-  color:
-    #dce5fb;
-
-  vertical-align:
-    middle;
-
+tr:last-child td{
+  border-bottom:0;
 }
 
-tr:last-child td {
-
-  border-bottom:
-    0;
-
+.amount{
+  color:#a879ff;
+  font-weight:900;
+  white-space:nowrap;
 }
 
-.amount-text {
-
-  color:
-    #a879ff;
-
-  white-space:
-    nowrap;
-
+.status{
+  display:inline-block;
+  padding:7px 11px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
 }
 
-.status {
-
-  display:
-    inline-block;
-
-  padding:
-    7px 11px;
-
-  border-radius:
-    999px;
-
-  font-size:
-    13px;
-
-  font-weight:
-    700;
-
+.pending{
+  background:#3a2d08;
+  color:#ffd75c;
 }
 
-.pending {
-
-  background:
-    #3a2d08;
-
-  color:
-    #ffd75c;
-
+.approved{
+  background:#103923;
+  color:#65e99a;
 }
 
-.approved {
-
-  background:
-    #103923;
-
-  color:
-    #65e99a;
-
+.rejected{
+  background:#42191d;
+  color:#ff7d87;
 }
 
-.rejected {
-
-  background:
-    #42191d;
-
-  color:
-    #ff7d87;
-
+.expired{
+  background:#422417;
+  color:#ffad72;
 }
 
-.expired {
-
-  background:
-    #422417;
-
-  color:
-    #ffad72;
-
+.timer{
+  margin-bottom:8px;
 }
 
-.admin-timer {
-
-  margin-bottom:
-    9px;
-
+.countdown{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:8px;
+  color:#b487ff;
+  background:#071126;
+  border:1px solid #3b3272;
+  font-weight:900;
+  font-size:12px;
 }
 
-.countdown {
-
-  display:
-    inline-block;
-
-  padding:
-    6px 10px;
-
-  border-radius:
-    8px;
-
-  background:
-    #071126;
-
-  border:
-    1px solid
-    rgba(
-      139,
-      92,
-      255,
-      .35
-    );
-
-  color:
-    #a879ff;
-
-  font-size:
-    13px;
-
-  font-weight:
-    800;
-
+.actions{
+  display:flex;
+  gap:7px;
 }
 
-.actions {
-
-  display:
-    flex;
-
-  gap:
-    8px;
-
-}
-
-.actions form {
-
-  margin:
-    0;
-
+.actions form{
+  margin:0;
 }
 
 .actions button,
-.save-btn,
-.delete-btn {
-
-  border:
-    0;
-
-  border-radius:
-    9px;
-
-  padding:
-    9px 12px;
-
-  color:
-    white;
-
-  font-weight:
-    700;
-
-  cursor:
-    pointer;
-
+.save,
+.delete{
+  border:0;
+  border-radius:9px;
+  padding:9px 12px;
+  color:white;
+  font-weight:800;
+  cursor:pointer;
 }
 
 .approve,
-.save-btn {
-
-  background:
-    #16834b;
-
+.save{
+  background:#16834b;
 }
 
 .reject,
-.delete-btn {
-
-  background:
-    #a93440;
-
+.delete{
+  background:#a93440;
 }
 
-.action-done {
-
-  color:
-    #8998b8;
-
-  font-size:
-    13px;
-
-  white-space:
-    nowrap;
-
+.done{
+  color:#8c9ab7;
+  font-size:13px;
 }
 
-.manual-admin {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    8px;
-
-  flex-wrap:
-    wrap;
-
-}
-
-.manual-admin strong {
-
-  color:
-    #ffad72;
-
-  font-size:
-    13px;
-
-}
-
-.manual-admin a {
-
-  display:
-    inline-block;
-
-  padding:
-    8px 10px;
-
-  border-radius:
-    8px;
-
-  background:
-    #168dcc;
-
-  color:
-    #fff;
-
-  text-decoration:
-    none;
-
-  font-size:
-    12px;
-
-  font-weight:
-    700;
-
-}
-
-.proof-btn {
-
-  display:
-    inline-block;
-
-  padding:
-    9px 12px;
-
-  border-radius:
-    9px;
-
+.proof{
+  display:inline-block;
+  padding:9px 12px;
+  border-radius:9px;
+  color:white;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:800;
   background:
     linear-gradient(
       90deg,
       #8b2cff,
       #087cff
     );
-
-  color:
-    white;
-
-  text-decoration:
-    none;
-
-  font-weight:
-    700;
-
-  font-size:
-    13px;
-
-  white-space:
-    nowrap;
-
 }
 
-.no-proof {
-
-  color:
-    #7787a9;
-
+.manual{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
 }
 
-.plan-actions {
-
-  display:
-    flex;
-
-  gap:
-    8px;
-
-  flex-wrap:
-    wrap;
-
+.manual strong{
+  color:#ffad72;
+  font-size:12px;
 }
 
-.add-plan {
+.manual a{
+  padding:8px 10px;
+  border-radius:8px;
+  color:white;
+  text-decoration:none;
+  background:#168dcc;
+  font-size:12px;
+  font-weight:800;
+}
 
-  display:
-    grid;
+.plan-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
 
+.add-plan{
+  display:grid;
   grid-template-columns:
     1fr 150px 1fr auto;
-
-  gap:
-    10px;
-
-  align-items:
-    end;
-
+  gap:10px;
+  align-items:end;
 }
 
-.add-plan label {
-
-  display:
-    block;
-
-  color:
-    #cbd7f4;
-
-  font-size:
-    13px;
-
-  margin-bottom:
-    7px;
-
+.add-plan label{
+  display:block;
+  margin-bottom:7px;
+  color:#aebce0;
+  font-size:12px;
 }
 
-.add-btn {
-
-  border:
-    0;
-
-  padding:
-    12px 18px;
-
-  border-radius:
-    10px;
-
+.add{
+  border:0;
+  padding:12px 18px;
+  border-radius:10px;
+  color:white;
+  font-weight:800;
+  cursor:pointer;
   background:
     linear-gradient(
       90deg,
       #8b2cff,
       #087cff
     );
-
-  color:
-    white;
-
-  font-weight:
-    800;
-
-  cursor:
-    pointer;
-
 }
 
-.empty {
-
-  text-align:
-    center;
-
-  padding:
-    50px;
-
-  color:
-    #9eacd0;
-
+.empty{
+  padding:45px;
+  text-align:center;
+  color:#8190b0;
 }
 
-@media(max-width:800px) {
-
-  .settings-grid {
+@media(max-width:1000px){
+  .stats{
     grid-template-columns:
-      1fr;
+      repeat(3,1fr);
+  }
+}
+
+@media(max-width:750px){
+
+  .settings{
+    grid-template-columns:1fr;
   }
 
-  .setting-group.full {
-    grid-column:
-      auto;
+  .group.full{
+    grid-column:auto;
   }
 
-  .add-plan {
+  .add-plan{
+    grid-template-columns:1fr;
+  }
+
+  .stats{
     grid-template-columns:
-      1fr;
+      repeat(2,1fr);
   }
 
 }
 
-@media(max-width:600px) {
+@media(max-width:500px){
 
-  .topbar {
-    padding:
-      18px 20px;
+  .container{
+    padding:22px 12px 50px;
   }
 
-  .logo {
-    font-size:
-      30px;
+  .topbar{
+    padding:18px;
   }
 
-  .container {
-    padding:
-      25px 14px;
+  .logo{
+    font-size:29px;
   }
 
-  .header h1 {
-    font-size:
-      28px;
+  .header h1{
+    font-size:28px;
   }
 
 }
@@ -2876,19 +2097,48 @@ Payment Dashboard
 </h1>
 
 <p>
-Manage payments, plans and website settings.
+Payments, plans and website controls.
 </p>
 
 </section>
 
-<!-- ================================================ -->
-<!-- WEBSITE SETTINGS -->
-<!-- ================================================ -->
+<!-- ================= STATS ================= -->
+
+<section class="stats">
+
+<div class="stat">
+<span class="stat-number">${total}</span>
+<span class="stat-label">Total Payments</span>
+</div>
+
+<div class="stat">
+<span class="stat-number">${pending}</span>
+<span class="stat-label">Pending</span>
+</div>
+
+<div class="stat">
+<span class="stat-number">${approved}</span>
+<span class="stat-label">Approved</span>
+</div>
+
+<div class="stat">
+<span class="stat-number">${rejected}</span>
+<span class="stat-label">Rejected</span>
+</div>
+
+<div class="stat">
+<span class="stat-number">${expired}</span>
+<span class="stat-label">Expired</span>
+</div>
+
+</section>
+
+<!-- ================= WEBSITE SETTINGS ================= -->
 
 <section class="panel">
 
 <h2>
-Website Settings
+⚙️ Website Settings
 </h2>
 
 <form
@@ -2897,102 +2147,71 @@ Website Settings
   enctype="multipart/form-data"
 >
 
-<div class="settings-grid">
+<div class="settings">
 
-<div class="setting-group">
+<div class="group">
 
-<label>
-Telegram Link
-</label>
+<label>Telegram Link</label>
 
 <input
-  class="setting-input"
+  class="input"
   type="text"
   name="telegram"
   value="${escapeHTML(
     settings.telegram
   )}"
-  placeholder="https://t.me/username"
 >
 
 </div>
 
-<div class="setting-group">
+<div class="group">
 
-<label>
-Contact Number
-</label>
+<label>Contact Number</label>
 
 <input
-  class="setting-input"
+  class="input"
   type="text"
   name="contactNumber"
   value="${escapeHTML(
     settings.contactNumber
   )}"
-  placeholder="6371406885"
 >
 
 </div>
 
-<div class="setting-group">
+<div class="group">
 
-<label>
-UPI ID
-</label>
+<label>UPI ID</label>
 
 <input
-  class="setting-input"
+  class="input"
   type="text"
   name="upiId"
   value="${escapeHTML(
     settings.upiId
   )}"
-  placeholder="example@upi"
 >
 
 </div>
 
-<div class="setting-group">
+<div class="group">
 
-<label>
-QR Code
-</label>
+<label>UPI QR Upload</label>
 
 <input
-  class="setting-input"
+  class="input"
   type="file"
   name="qr"
   accept="image/*"
 >
 
-${
-  settings.qrImage
-
-    ? `
-
-<img
-  class="qr-preview"
-  src="${escapeHTML(
-    settings.qrImage
-  )}"
-  alt="Current QR"
->
-
-    `
-
-    : ""
-}
-
 </div>
 
-<div class="setting-group full">
+<div class="group full">
 
-<label>
-Free Trial
-</label>
+<label>Free Trial</label>
 
-<div class="checkbox-row">
+<div class="checkbox">
 
 <input
   type="checkbox"
@@ -3006,7 +2225,7 @@ Free Trial
 >
 
 <span>
-Show 1 Day Free Trial on Plans page
+Show 1 Day Free Trial
 </span>
 
 </div>
@@ -3015,10 +2234,7 @@ Show 1 Day Free Trial on Plans page
 
 </div>
 
-<button
-  class="save-settings"
-  type="submit"
->
+<button class="primary">
 Save Website Settings
 </button>
 
@@ -3026,14 +2242,12 @@ Save Website Settings
 
 </section>
 
-<!-- ================================================ -->
-<!-- PLAN MANAGER -->
-<!-- ================================================ -->
+<!-- ================= PLAN MANAGER ================= -->
 
 <section class="panel">
 
 <h2>
-Plan Manager
+📦 Plan Manager
 </h2>
 
 <div class="table-wrap">
@@ -3041,48 +2255,28 @@ Plan Manager
 <table style="min-width:900px">
 
 <thead>
-
 <tr>
-
-<th>
-Plan Name
-</th>
-
-<th>
-Amount
-</th>
-
-<th>
-Description
-</th>
-
-<th>
-Action
-</th>
-
+<th>Plan</th>
+<th>Amount</th>
+<th>Description</th>
+<th>Action</th>
 </tr>
-
 </thead>
 
 <tbody>
 
 ${
   planRows ||
-
   `
-
 <tr>
-
 <td
-colspan="4"
-class="empty"
+  colspan="4"
+  class="empty"
 >
 No plans found.
 </td>
-
 </tr>
-
-  `
+`
 }
 
 </tbody>
@@ -3091,7 +2285,7 @@ No plans found.
 
 </div>
 
-<h3 style="margin-top:30px">
+<h3>
 Add New Plan
 </h3>
 
@@ -3103,13 +2297,10 @@ Add New Plan
 
 <div>
 
-<label>
-Plan Name
-</label>
+<label>Plan Name</label>
 
 <input
-  class="setting-input"
-  type="text"
+  class="input"
   name="name"
   placeholder="90 Days"
   required
@@ -3119,12 +2310,10 @@ Plan Name
 
 <div>
 
-<label>
-Amount
-</label>
+<label>Amount</label>
 
 <input
-  class="setting-input"
+  class="input"
   type="number"
   name="amount"
   min="0"
@@ -3136,23 +2325,17 @@ Amount
 
 <div>
 
-<label>
-Description
-</label>
+<label>Description</label>
 
 <input
-  class="setting-input"
-  type="text"
+  class="input"
   name="description"
   placeholder="Premium access for 90 days."
 >
 
 </div>
 
-<button
-  class="add-btn"
-  type="submit"
->
+<button class="add">
 + Add Plan
 </button>
 
@@ -3160,77 +2343,13 @@ Description
 
 </section>
 
-<!-- ================================================ -->
-<!-- STATS -->
-<!-- ================================================ -->
+<!-- ================= PAYMENT DASHBOARD ================= -->
 
-<div class="stats">
+<section class="panel">
 
-<div class="stat">
-
-<span class="stat-number">
-${total}
-</span>
-
-<span class="stat-label">
-Total
-</span>
-
-</div>
-
-<div class="stat">
-
-<span class="stat-number">
-${pending}
-</span>
-
-<span class="stat-label">
-Pending
-</span>
-
-</div>
-
-<div class="stat">
-
-<span class="stat-number">
-${approved}
-</span>
-
-<span class="stat-label">
-Approved
-</span>
-
-</div>
-
-<div class="stat">
-
-<span class="stat-number">
-${rejected}
-</span>
-
-<span class="stat-label">
-Rejected
-</span>
-
-</div>
-
-<div class="stat">
-
-<span class="stat-number">
-${expired}
-</span>
-
-<span class="stat-label">
-Expired
-</span>
-
-</div>
-
-</div>
-
-<!-- ================================================ -->
-<!-- PAYMENTS -->
-<!-- ================================================ -->
+<h2>
+💳 Payment Submissions
+</h2>
 
 <div class="table-wrap">
 
@@ -3239,43 +2358,15 @@ Expired
 <thead>
 
 <tr>
-
-<th>
-Plan
-</th>
-
-<th>
-Amount
-</th>
-
-<th>
-UTR
-</th>
-
-<th>
-TradingView
-</th>
-
-<th>
-Telegram
-</th>
-
-<th>
-Proof
-</th>
-
-<th>
-Status
-</th>
-
-<th>
-Date
-</th>
-
-<th>
-Action
-</th>
-
+<th>Plan</th>
+<th>Amount</th>
+<th>UTR</th>
+<th>TradingView</th>
+<th>Telegram</th>
+<th>Proof</th>
+<th>Status</th>
+<th>Date</th>
+<th>Action</th>
 </tr>
 
 </thead>
@@ -3284,21 +2375,16 @@ Action
 
 ${
   rows ||
-
   `
-
 <tr>
-
 <td
-colspan="9"
-class="empty"
+  colspan="9"
+  class="empty"
 >
 No payment submissions yet.
 </td>
-
 </tr>
-
-  `
+`
 }
 
 </tbody>
@@ -3307,26 +2393,23 @@ No payment submissions yet.
 
 </div>
 
+</section>
+
 </main>
 
 <script>
 
-function updateAdminTimers() {
+function updateTimers(){
 
-  const elements =
-    document.querySelectorAll(
-      ".countdown"
-    );
+  let reload = false;
 
-  let shouldReload =
-    false;
-
-  elements.forEach(
-    function(element) {
+  document
+    .querySelectorAll(".countdown")
+    .forEach(el => {
 
       const expiry =
         new Date(
-          element.dataset.expiry
+          el.dataset.expiry
         ).getTime();
 
       const remaining =
@@ -3336,71 +2419,49 @@ function updateAdminTimers() {
           Date.now()
         );
 
-      const totalSeconds =
+      const seconds =
         Math.ceil(
-          remaining /
-          1000
+          remaining / 1000
         );
 
       const minutes =
         Math.floor(
-          totalSeconds /
-          60
+          seconds / 60
         );
 
-      const seconds =
-        totalSeconds %
-        60;
+      const sec =
+        seconds % 60;
 
-      element.textContent =
+      el.textContent =
         String(minutes)
-          .padStart(
-            2,
-            "0"
-          ) +
+          .padStart(2,"0") +
         ":" +
-        String(seconds)
-          .padStart(
-            2,
-            "0"
-          );
+        String(sec)
+          .padStart(2,"0");
 
-      if (
-        remaining <=
-        0
-      ) {
-
-        shouldReload =
-          true;
-
+      if(remaining <= 0){
+        reload = true;
       }
 
-    }
-  );
+    });
 
-  if (
-    shouldReload
-  ) {
-
-    window.location.reload();
-
+  if(reload){
+    location.reload();
   }
 
 }
 
-updateAdminTimers();
+updateTimers();
 
 setInterval(
-  updateAdminTimers,
+  updateTimers,
   1000
 );
 
 </script>
 
 </body>
-
 </html>
-
     `);
 
   }
@@ -3419,26 +2480,32 @@ app.post(
       getSettings();
 
     settings.telegram =
-      req.body.telegram ||
-      "";
+      String(
+        req.body.telegram || ""
+      ).trim();
 
     settings.contactNumber =
-      req.body.contactNumber ||
-      "";
+      String(
+        req.body.contactNumber || ""
+      ).trim();
 
     settings.upiId =
-      req.body.upiId ||
-      "";
+      String(
+        req.body.upiId || ""
+      ).trim();
 
     settings.freeTrialEnabled =
       req.body.freeTrialEnabled ===
       "1";
 
-    if (req.file) {
+    if(req.file){
 
       settings.qrImage =
         "/uploads/" +
         req.file.filename;
+
+      settings.paymentQrs.upi =
+        settings.qrImage;
 
     }
 
@@ -3446,9 +2513,7 @@ app.post(
       settings
     );
 
-    res.redirect(
-      "/admin"
-    );
+    res.redirect("/admin");
 
   }
 );
@@ -3466,28 +2531,26 @@ app.post(
 
     const name =
       String(
-        req.body.name ||
-        ""
+        req.body.name || ""
       ).trim();
 
     const amount =
-      Number(
-        req.body.amount ||
-        0
+      Math.max(
+        0,
+        Number(
+          req.body.amount || 0
+        )
       );
 
     const description =
       String(
-        req.body.description ||
-        ""
+        req.body.description || ""
       ).trim();
 
-    if (!name) {
-
+    if(!name){
       return res.redirect(
         "/admin"
       );
-
     }
 
     let id =
@@ -3502,24 +2565,20 @@ app.post(
           ""
         );
 
-    if (!id) {
+    if(!id){
       id =
         "plan-" +
         Date.now();
     }
 
-    const originalId =
-      id;
+    const originalId = id;
+    let counter = 2;
 
-    let counter =
-      2;
-
-    while (
+    while(
       settings.plans.some(
-        plan =>
-          plan.id === id
+        p => p.id === id
       )
-    ) {
+    ){
 
       id =
         originalId +
@@ -3527,31 +2586,21 @@ app.post(
         counter;
 
       counter++;
+
     }
 
     settings.plans.push({
-
       id,
-
       name,
-
-      amount:
-        Math.max(
-          0,
-          amount
-        ),
-
+      amount,
       description
-
     });
 
     saveSettings(
       settings
     );
 
-    res.redirect(
-      "/admin"
-    );
+    res.redirect("/admin");
 
   }
 );
@@ -3574,41 +2623,29 @@ app.post(
           req.params.id
       );
 
-    if (plan) {
+    if(plan){
 
       const name =
         String(
-          req.body.planName ||
-          ""
+          req.body.planName || ""
         ).trim();
 
-      const amount =
-        Number(
-          req.body.planAmount ||
-          0
-        );
-
-      const description =
-        String(
-          req.body.planDescription ||
-          ""
-        ).trim();
-
-      if (name) {
-
-        plan.name =
-          name;
-
+      if(name){
+        plan.name = name;
       }
 
       plan.amount =
         Math.max(
           0,
-          amount
+          Number(
+            req.body.planAmount || 0
+          )
         );
 
       plan.description =
-        description;
+        String(
+          req.body.planDescription || ""
+        ).trim();
 
       saveSettings(
         settings
@@ -3616,9 +2653,7 @@ app.post(
 
     }
 
-    res.redirect(
-      "/admin"
-    );
+    res.redirect("/admin");
 
   }
 );
@@ -3636,8 +2671,8 @@ app.post(
 
     settings.plans =
       settings.plans.filter(
-        plan =>
-          plan.id !==
+        p =>
+          p.id !==
           req.params.id
       );
 
@@ -3645,15 +2680,13 @@ app.post(
       settings
     );
 
-    res.redirect(
-      "/admin"
-    );
+    res.redirect("/admin");
 
   }
 );
 
 // ======================================================
-// ADMIN APPROVE
+// APPROVE
 // ======================================================
 
 app.post(
@@ -3670,39 +2703,31 @@ app.post(
           req.params.id
       );
 
-    if (payment) {
+    if(
+      payment &&
+      payment.status === "Pending" &&
+      !isExpired(payment)
+    ){
 
-      if (
-        payment.status ===
-        "Pending" &&
-        !isExpired(
-          payment
-        )
-      ) {
+      payment.status =
+        "Approved";
 
-        payment.status =
-          "Approved";
+      payment.approvedAt =
+        new Date().toISOString();
 
-        payment.approvedAt =
-          new Date().toISOString();
-
-        savePayments(
-          payments
-        );
-
-      }
+      savePayments(
+        payments
+      );
 
     }
 
-    res.redirect(
-      "/admin"
-    );
+    res.redirect("/admin");
 
   }
 );
 
 // ======================================================
-// ADMIN REJECT
+// REJECT
 // ======================================================
 
 app.post(
@@ -3719,126 +2744,31 @@ app.post(
           req.params.id
       );
 
-    if (payment) {
+    if(
+      payment &&
+      payment.status === "Pending" &&
+      !isExpired(payment)
+    ){
 
-      if (
-        payment.status ===
-        "Pending" &&
-        !isExpired(
-          payment
-        )
-      ) {
+      payment.status =
+        "Rejected";
 
-        payment.status =
-          "Rejected";
+      payment.rejectedAt =
+        new Date().toISOString();
 
-        payment.rejectedAt =
-          new Date().toISOString();
-
-        savePayments(
-          payments
-        );
-
-      }
+      savePayments(
+        payments
+      );
 
     }
 
-    res.redirect(
-      "/admin"
-    );
+    res.redirect("/admin");
 
   }
 );
 
 // ======================================================
-// ADMIN TIMER FORMAT
-// ======================================================
-
-function formatAdminTime(
-  remainingMs
-) {
-
-  const totalSeconds =
-    Math.max(
-      0,
-      Math.ceil(
-        remainingMs /
-        1000
-      )
-    );
-
-  const minutes =
-    Math.floor(
-      totalSeconds /
-      60
-    );
-
-  const seconds =
-    totalSeconds %
-    60;
-
-  return (
-    String(minutes)
-      .padStart(
-        2,
-        "0"
-      ) +
-    ":" +
-    String(seconds)
-      .padStart(
-        2,
-        "0"
-      )
-  );
-
-}
-
-// ======================================================
-// HTML ESCAPE
-// ======================================================
-
-function escapeHTML(value) {
-
-  if (
-    value === undefined ||
-    value === null
-  ) {
-
-    return "";
-
-  }
-
-  return String(value)
-
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-
-    .replace(
-      /</g,
-      "&lt;"
-    )
-
-    .replace(
-      />/g,
-      "&gt;"
-    )
-
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
-}
-
-// ======================================================
-// START SERVER
+// START
 // ======================================================
 
 app.listen(
