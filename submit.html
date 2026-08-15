@@ -1,325 +1,230 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
   <title>Submit Payment Details</title>
 
+  <link rel="stylesheet" href="/styles.css">
+
   <style>
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      min-height: 100%;
-    }
-
     body {
-      margin: 0;
-      min-height: 100vh;
-
-      font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
-      color: #f5f7ff;
-
-      background:
-        radial-gradient(
-          circle at 50% 0%,
-          #17254d 0%,
-          transparent 42%
-        ),
-        #070d1d;
+      background: #050b1c;
+      color: #eef3ff;
     }
-
-
-    /* HEADER */
 
     .topbar {
-      height: 90px;
-
-      display: flex;
-      align-items: center;
-
-      padding: 0 28px;
-
-      background: #080d1b;
-
-      border-bottom:
-        1px solid #202c49;
+      background: #050b1c;
+      border-bottom: 1px solid rgba(139,92,255,.18);
     }
-
 
     .logo {
-      font-size: 36px;
+      color: #fff;
+      font-size: 32px;
       font-weight: 800;
-
-      letter-spacing: -1px;
     }
-
 
     .logo span {
-      color: #8b5cff;
+      background: linear-gradient(90deg,#9b35ff,#087cff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-
-
-    /* MAIN */
-
-    .container {
-      width: 100%;
-      max-width: 900px;
-
-      margin: auto;
-
-      padding:
-        35px 20px 60px;
-    }
-
-
-    /* HERO */
 
     .hero-small {
       text-align: center;
-
-      padding:
-        25px 10px 30px;
     }
-
 
     .hero-small h1 {
-      margin: 0 0 14px;
-
-      font-size: 44px;
-
-      color: #f5f7ff;
+      color: #f4f7ff;
     }
 
-
     .hero-small p {
-      margin: 0;
-
-      color: #9eaccb;
-
-      font-size: 18px;
-
+      color: #9eacd0;
       line-height: 1.6;
     }
 
-
-    /* CARD */
-
     .card {
-      background:
-        linear-gradient(
-          145deg,
-          #111c34,
-          #0c152b
-        );
-
-      border:
-        1px solid #29395b;
-
-      border-radius: 22px;
-
-      padding: 28px;
-
-      margin-bottom: 18px;
-
-      box-shadow:
-        0 12px 35px
-        rgba(0,0,0,.18);
+      background: #0d1a35;
+      border: 1px solid rgba(125,153,220,.25);
+      border-radius: 28px;
     }
-
-
-    /* LABEL */
 
     label {
       display: block;
-
-      margin:
-        20px 0 8px;
-
-      color: #dbe3f7;
-
-      font-size: 16px;
-
+      color: #dce6ff;
+      font-size: 17px;
       font-weight: 700;
+      margin-top: 22px;
+      margin-bottom: 9px;
     }
 
-
-    /* INPUT */
-
-    input[type="text"],
-    input[type="file"] {
-
+    input[type="text"] {
       width: 100%;
-
-      padding: 16px;
-
-      border:
-        1px solid #29395b;
-
-      border-radius: 13px;
-
-      background: #080f22;
-
-      color: #f5f7ff;
-
-      font-size: 16px;
-
+      box-sizing: border-box;
+      padding: 17px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(125,153,220,.28);
+      background: #050c20;
+      color: #fff;
+      font-size: 17px;
       outline: none;
     }
 
-
-    input[type="text"]::placeholder {
-      color: #687796;
-    }
-
-
-    input[type="text"]:focus,
-    input[type="file"]:focus {
-
+    input[type="text"]:focus {
       border-color: #8b5cff;
-
-      box-shadow:
-        0 0 0 2px
-        rgba(139,92,255,.12);
+      box-shadow: 0 0 0 2px rgba(139,92,255,.15);
     }
 
-
-    /* FILE INPUT */
+    input::placeholder {
+      color: #687696;
+    }
 
     input[type="file"] {
+      width: 100%;
+      box-sizing: border-box;
       padding: 12px;
-
-      cursor: pointer;
+      border-radius: 18px;
+      border: 1px solid rgba(125,153,220,.28);
+      background: #050c20;
+      color: #dce6ff;
+      font-size: 14px;
     }
 
+    /* ================= UTR GUIDE ================= */
 
-    /* BUTTON */
+    .utr-guide {
+      margin: 8px 0 14px;
+    }
+
+    .utr-guide summary {
+      display: inline-block;
+      color: #a56bff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 5px 0;
+    }
+
+    .utr-guide summary:hover {
+      color: #2e91ff;
+    }
+
+    .utr-guide-text {
+      color: #9eacd0;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 10px 0 12px;
+    }
+
+    .utr-guide-text strong {
+      color: #fff;
+    }
+
+    .utr-guide-image {
+      width: 100%;
+      max-width: 430px;
+      height: auto;
+      display: block;
+      margin: 12px auto 10px;
+      border-radius: 16px;
+      border: 1px solid rgba(139,92,255,.4);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      cursor: zoom-in;
+    }
+
+    /* ================= GUIDE DOWNLOAD ================= */
+
+    .guide-download {
+      display: flex;
+      justify-content: center;
+      margin: 10px auto 18px;
+    }
+
+    .guide-download-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      background: linear-gradient(
+        90deg,
+        #9b2cff,
+        #5b55ff,
+        #087cff
+      );
+      box-shadow: 0 7px 20px rgba(65,70,255,.22);
+    }
+
+    .guide-download-btn:active {
+      transform: scale(.97);
+    }
+
+    /* ================= SUBMIT BUTTON ================= */
 
     .btn {
-
-      display: inline-block;
-
       width: 100%;
-
-      margin-top: 25px;
-
-      padding: 17px;
-
       border: 0;
-
-      border-radius: 14px;
-
-      background:
-        linear-gradient(
-          90deg,
-          #8b35ff,
-          #147cff
-        );
-
-      color: #ffffff;
-
+      border-radius: 18px;
+      padding: 17px 20px;
+      margin-top: 25px;
+      color: #fff;
       font-size: 17px;
-
       font-weight: 800;
-
       cursor: pointer;
-
-      text-align: center;
-
-      transition: .2s;
+      background: linear-gradient(
+        90deg,
+        #9b2cff,
+        #5b55ff,
+        #087cff
+      );
+      box-shadow: 0 8px 25px rgba(65,70,255,.25);
     }
-
-
-    .btn:hover {
-      transform: translateY(-1px);
-
-      opacity: .94;
-    }
-
 
     .btn:active {
-      transform: scale(.99);
+      transform: scale(.98);
     }
 
-
-    /* MOBILE */
-
-    @media (max-width: 600px) {
-
-      .topbar {
-        height: 80px;
-
-        padding: 0 18px;
-      }
-
+    @media (max-width: 520px) {
 
       .logo {
-        font-size: 32px;
+        font-size: 28px;
       }
 
-
-      .container {
-        padding:
-          25px 16px 50px;
+      .utr-guide-image {
+        max-width: 100%;
       }
 
-
-      .hero-small h1 {
-        font-size: 34px;
-      }
-
-
-      .hero-small p {
-        font-size: 16px;
-      }
-
-
-      .card {
-        padding: 21px;
-      }
-
-
-      .btn {
-        font-size: 16px;
+      .guide-download-btn {
+        width: 100%;
       }
     }
-
   </style>
 </head>
 
 
 <body>
 
-
 <header class="topbar">
-
   <div class="logo">
     V<span>exora</span>
   </div>
-
 </header>
 
 
 <main class="container">
 
-
   <section class="hero-small">
 
-    <h1>
-      Submit Payment Details
-    </h1>
+    <h1>Submit Payment Details</h1>
 
     <p>
-      Payment complete karne ke baad
-      apni details submit karein.
+      Payment complete karne ke baad apni details submit karein.
     </p>
 
   </section>
@@ -334,23 +239,79 @@
     >
 
 
-      <label>
+      <!-- ================= UTR ================= -->
+
+      <label for="transactionId">
         UTR / Transaction ID
       </label>
 
+
+      <details class="utr-guide">
+
+        <summary>
+          How to find UTR?
+        </summary>
+
+
+        <p class="utr-guide-text">
+          PhonePe payment complete hone ke baad
+          <strong>Transaction Details</strong> me
+          <strong>UTR</strong> number dekhein.
+          Screenshot me UTR highlighted hai.
+        </p>
+
+
+        <!-- UTR GUIDE IMAGE -->
+
+        <a
+          href="/assets/utr-guide.jpg"
+          target="_blank"
+          rel="noopener"
+        >
+          <img
+            src="/assets/utr-guide.jpg"
+            alt="How to find UTR in PhonePe"
+            class="utr-guide-image"
+          >
+        </a>
+
+
+        <!-- DOWNLOAD GUIDE -->
+
+        <div class="guide-download">
+
+          <a
+            class="guide-download-btn"
+            href="/assets/utr-guide.jpg"
+            download="vexora-utr-guide.jpg"
+          >
+            ↓ Download Guide
+          </a>
+
+        </div>
+
+      </details>
+
+
       <input
+        id="transactionId"
         type="text"
         name="transactionId"
-        placeholder="Enter transaction/reference ID"
+        placeholder="Enter UTR / Transaction ID"
+        inputmode="numeric"
+        autocomplete="off"
         required
       >
 
 
-      <label>
+      <!-- ================= TRADINGVIEW ================= -->
+
+      <label for="tradingview">
         TradingView Username
       </label>
 
       <input
+        id="tradingview"
         type="text"
         name="tradingview"
         placeholder="@username or username"
@@ -358,11 +319,14 @@
       >
 
 
-      <label>
+      <!-- ================= TELEGRAM ================= -->
+
+      <label for="telegram">
         Telegram Username
       </label>
 
       <input
+        id="telegram"
         type="text"
         name="telegram"
         placeholder="@username"
@@ -370,17 +334,22 @@
       >
 
 
-      <label>
+      <!-- ================= PAYMENT PROOF ================= -->
+
+      <label for="proof">
         Payment Proof / Screenshot
       </label>
 
       <input
+        id="proof"
         type="file"
         name="proof"
         accept="image/*"
         required
       >
 
+
+      <!-- ================= SUBMIT ================= -->
 
       <button
         class="btn"
@@ -394,9 +363,7 @@
 
   </section>
 
-
 </main>
-
 
 </body>
 </html>
