@@ -11,13 +11,7 @@ const PORT = process.env.PORT || 10000;
 // SETTINGS
 // ======================================================
 
-// 15 minutes
 const REVIEW_TIME_MS = 15 * 60 * 1000;
-
-// IMPORTANT:
-// Yahan apna Telegram username/link baad me daal dena.
-// Example:
-// const MANUAL_REVIEW_TELEGRAM = "https://t.me/yourusername";
 
 const MANUAL_REVIEW_TELEGRAM =
   "https://t.me/Jkhub_premium";
@@ -170,11 +164,6 @@ function isExpired(payment) {
 }
 
 
-/*
-  Automatically convert old Pending
-  submissions into Expired when
-  they cross the 15-minute limit.
-*/
 function updateExpiredPayments() {
 
   const payments =
@@ -441,36 +430,30 @@ app.post(
       "Payment submission received"
     );
 
-
     console.log(
       "Plan:",
       payment.plan
     );
-
 
     console.log(
       "Amount:",
       payment.amount
     );
 
-
     console.log(
       "UTR:",
       payment.transactionId
     );
-
 
     console.log(
       "TradingView:",
       payment.tradingview
     );
 
-
     console.log(
       "Telegram:",
       payment.telegram
     );
-
 
     console.log(
       "Proof:",
@@ -825,7 +808,6 @@ h1 {
 
 }
 
-
 </style>
 
 </head>
@@ -1034,6 +1016,11 @@ function showStatus(status) {
   }
 
 
+  // ====================================================
+  // REJECTED
+  // Telegram option WILL remain visible
+  // ====================================================
+
   if (
     status ===
     "Rejected"
@@ -1050,11 +1037,17 @@ function showStatus(status) {
     statusMessage.style.display =
       "block";
 
-    manualReview.style.display =
-      "none";
-
     timer.style.display =
       "none";
+
+    manualReview.style.display =
+      "block";
+
+    manualReview.querySelector("h2").textContent =
+      "Payment Rejected";
+
+    manualReview.querySelector("p").textContent =
+      "Your payment request was rejected. Please contact us on Telegram for assistance.";
 
     return;
 
@@ -2251,13 +2244,6 @@ ${
 
 <script>
 
-/*
-  Live admin countdown.
-  When timer reaches 00:00,
-  reload the dashboard so the
-  submission becomes Expired.
-*/
-
 function updateAdminTimers() {
 
   const elements =
@@ -2375,9 +2361,6 @@ app.post(
 
     if (payment) {
 
-      // Do not allow approval
-      // after the 15-minute window.
-
       if (
         payment.status ===
         "Pending" &&
@@ -2428,9 +2411,6 @@ app.post(
 
 
     if (payment) {
-
-      // Do not allow rejection
-      // after the 15-minute window.
 
       if (
         payment.status ===
