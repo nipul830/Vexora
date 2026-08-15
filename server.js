@@ -6,8 +6,9 @@ const fs = require("fs");
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+
 // ===============================
-// BASIC SETUP
+// PARSE FORM DATA
 // ===============================
 
 app.use(express.urlencoded({ extended: true }));
@@ -15,53 +16,86 @@ app.use(express.json());
 
 
 // ===============================
-// FOLDERS
+// DIRECTORIES
 // ===============================
 
-const publicDir = path.join(__dirname, "public");
-const uploadDir = path.join(publicDir, "uploads");
-const dataDir = path.join(__dirname, "data");
+const publicDir =
+  path.join(__dirname, "public");
 
-const paymentsFile = path.join(dataDir, "payments.json");
+const uploadDir =
+  path.join(publicDir, "uploads");
+
+const dataDir =
+  path.join(__dirname, "data");
+
+const paymentsFile =
+  path.join(dataDir, "payments.json");
 
 
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(uploadDir, {
+    recursive: true
+  });
 }
+
 
 if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+  fs.mkdirSync(dataDir, {
+    recursive: true
+  });
 }
 
+
 if (!fs.existsSync(paymentsFile)) {
-  fs.writeFileSync(paymentsFile, "[]", "utf8");
+  fs.writeFileSync(
+    paymentsFile,
+    "[]",
+    "utf8"
+  );
 }
 
 
 // ===============================
-// PAYMENT DATA HELPERS
+// PAYMENT HELPERS
 // ===============================
 
 function getPayments() {
+
   try {
-    const data = fs.readFileSync(paymentsFile, "utf8");
+
+    const data =
+      fs.readFileSync(
+        paymentsFile,
+        "utf8"
+      );
 
     if (!data.trim()) {
       return [];
     }
 
     return JSON.parse(data);
+
   } catch (error) {
-    console.error("Could not read payments:", error);
+
+    console.error(
+      "Could not read payments:",
+      error
+    );
+
     return [];
   }
 }
 
 
 function savePayments(payments) {
+
   fs.writeFileSync(
     paymentsFile,
-    JSON.stringify(payments, null, 2),
+    JSON.stringify(
+      payments,
+      null,
+      2
+    ),
     "utf8"
   );
 }
@@ -71,57 +105,86 @@ function savePayments(payments) {
 // FILE UPLOAD
 // ===============================
 
-const storage = multer.diskStorage({
+const storage =
+  multer.diskStorage({
 
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
+    destination:
+      function(req, file, cb) {
 
-  filename: function (req, file, cb) {
+        cb(
+          null,
+          uploadDir
+        );
 
-    const ext = path.extname(file.originalname);
-
-    const name =
-      "proof-" +
-      Date.now() +
-      "-" +
-      Math.random()
-        .toString(36)
-        .substring(2, 8) +
-      ext;
-
-    cb(null, name);
-  }
-
-});
+      },
 
 
-const upload = multer({
+    filename:
+      function(req, file, cb) {
 
-  storage: storage,
+        const ext =
+          path.extname(
+            file.originalname
+          );
 
-  limits: {
-    fileSize: 10 * 1024 * 1024
-  }
 
-});
+        const name =
+          "proof-" +
+          Date.now() +
+          "-" +
+          Math.random()
+            .toString(36)
+            .substring(2,8) +
+          ext;
+
+
+        cb(
+          null,
+          name
+        );
+
+      }
+
+  });
+
+
+const upload =
+  multer({
+
+    storage: storage,
+
+    limits: {
+      fileSize:
+        10 * 1024 * 1024
+    }
+
+  });
 
 
 // ===============================
 // STATIC FILES
 // ===============================
 
-app.use(express.static(publicDir));
+app.use(
+  express.static(
+    publicDir
+  )
+);
 
 
 // ===============================
 // HOME
 // ===============================
 
-app.get("/", (req, res) => {
+app.get("/", (req,res) => {
+
   res.sendFile(
-    path.join(__dirname, "index.html")
+    path.join(
+      __dirname,
+      "index.html"
+    )
   );
+
 });
 
 
@@ -129,10 +192,15 @@ app.get("/", (req, res) => {
 // PLANS
 // ===============================
 
-app.get("/plans", (req, res) => {
+app.get("/plans", (req,res) => {
+
   res.sendFile(
-    path.join(__dirname, "plans.html")
+    path.join(
+      __dirname,
+      "plans.html"
+    )
   );
+
 });
 
 
@@ -140,21 +208,31 @@ app.get("/plans", (req, res) => {
 // PAYMENT
 // ===============================
 
-app.get("/payment", (req, res) => {
+app.get("/payment", (req,res) => {
+
   res.sendFile(
-    path.join(__dirname, "payment.html")
+    path.join(
+      __dirname,
+      "payment.html"
+    )
   );
+
 });
 
 
 // ===============================
-// SUBMIT PAGE
+// SUBMIT
 // ===============================
 
-app.get("/submit", (req, res) => {
+app.get("/submit", (req,res) => {
+
   res.sendFile(
-    path.join(__dirname, "submit.html")
+    path.join(
+      __dirname,
+      "submit.html"
+    )
   );
+
 });
 
 
@@ -165,7 +243,8 @@ app.get("/submit", (req, res) => {
 app.post(
   "/submit-payment",
   upload.single("proof"),
-  (req, res) => {
+  (req,res) => {
+
 
     const payment = {
 
@@ -174,61 +253,95 @@ app.post(
         "-" +
         Math.random()
           .toString(36)
-          .substring(2, 8),
+          .substring(2,8),
+
+
+      plan:
+        req.body.plan || "",
+
+
+      amount:
+        req.body.amount || "",
+
 
       transactionId:
         req.body.transactionId || "",
 
+
       tradingview:
         req.body.tradingview || "",
+
 
       telegram:
         req.body.telegram || "",
 
+
       proof:
         req.file
-          ? "/uploads/" + req.file.filename
+          ? "/uploads/" +
+            req.file.filename
           : "",
 
-      status: "Pending",
+
+      status:
+        "Pending",
+
 
       createdAt:
         new Date().toISOString()
+
     };
 
 
-    // Save payment
-    const payments = getPayments();
-
-    payments.unshift(payment);
-
-    savePayments(payments);
+    // Save
+    const payments =
+      getPayments();
 
 
-    // Console
+    payments.unshift(
+      payment
+    );
+
+
+    savePayments(
+      payments
+    );
+
+
     console.log(
       "Payment submission received"
     );
 
+
     console.log(
-      "ID:",
-      payment.id
+      "Plan:",
+      payment.plan
     );
+
+
+    console.log(
+      "Amount:",
+      payment.amount
+    );
+
 
     console.log(
       "UTR:",
       payment.transactionId
     );
 
+
     console.log(
       "TradingView:",
       payment.tradingview
     );
 
+
     console.log(
       "Telegram:",
       payment.telegram
     );
+
 
     console.log(
       "Proof:",
@@ -255,7 +368,7 @@ app.post(
   content="width=device-width,initial-scale=1"
 >
 
-<title>Payment Submitted</title>
+<title>Payment Request Submitted</title>
 
 
 <style>
@@ -349,14 +462,64 @@ h1 {
 
   margin: 0 0 14px;
 
-  font-size: 28px;
+  font-size: 27px;
 
 }
 
 
-p {
+.plan {
 
-  margin: 0 0 28px;
+  margin-top: 15px;
+
+  padding: 16px;
+
+  border-radius: 14px;
+
+  background: #071126;
+
+  border:
+    1px solid
+    rgba(139,92,255,.30);
+
+}
+
+
+.plan-label {
+
+  color: #9eacd0;
+
+  font-size: 13px;
+
+}
+
+
+.plan-name {
+
+  margin-top: 5px;
+
+  font-size: 21px;
+
+  font-weight: 800;
+
+}
+
+
+.amount {
+
+  margin-top: 5px;
+
+  color: #a879ff;
+
+  font-size: 27px;
+
+  font-weight: 800;
+
+}
+
+
+.message {
+
+  margin: 20px 0 28px;
 
   color: #a9b8dc;
 
@@ -418,15 +581,40 @@ p {
 
 
   <h1>
-    Payment Details Submitted
+    Payment Request Submitted
   </h1>
 
 
-  <p>
-    Your payment details have been
-    submitted successfully.
-    We will verify your payment
-    and activate your plan.
+  <div class="plan">
+
+    <div class="plan-label">
+      Selected Plan
+    </div>
+
+
+    <div class="plan-name">
+      ${escapeHTML(
+        payment.plan
+      )}
+    </div>
+
+
+    <div class="amount">
+      ₹${Number(
+        payment.amount || 0
+      ).toLocaleString("en-IN")}
+    </div>
+
+  </div>
+
+
+  <p class="message">
+
+    Your payment request has
+    been submitted successfully.
+    Please wait while we verify
+    your payment.
+
   </p>
 
 
@@ -446,6 +634,7 @@ p {
 </html>
 
     `);
+
   }
 );
 
@@ -454,63 +643,178 @@ p {
 // ADMIN DASHBOARD
 // ======================================================
 
-app.get("/admin", (req, res) => {
+app.get("/admin", (req,res) => {
 
-  const payments = getPayments();
-
-
-  const rows = payments.map((payment) => {
-
-    const date = new Date(
-      payment.createdAt
-    ).toLocaleString();
+  const payments =
+    getPayments();
 
 
-    let statusClass = "pending";
-
-    if (payment.status === "Approved") {
-      statusClass = "approved";
-    }
-
-    if (payment.status === "Rejected") {
-      statusClass = "rejected";
-    }
+  const rows =
+    payments.map(
+      (payment) => {
 
 
-    const proofHTML = payment.proof
-      ? `
-        <a
-          class="proof-btn"
-          href="${payment.proof}"
-          target="_blank"
-          rel="noopener"
-        >
-          View Proof
-        </a>
-      `
-      : `
-        <span class="no-proof">
-          No Proof
-        </span>
-      `;
+        const date =
+          new Date(
+            payment.createdAt
+          ).toLocaleString();
 
 
-    return `
+        let statusClass =
+          "pending";
+
+
+        if (
+          payment.status ===
+          "Approved"
+        ) {
+
+          statusClass =
+            "approved";
+
+        }
+
+
+        if (
+          payment.status ===
+          "Rejected"
+        ) {
+
+          statusClass =
+            "rejected";
+
+        }
+
+
+        let actionHTML = "";
+
+
+        if (
+          payment.status ===
+          "Pending"
+        ) {
+
+          actionHTML = `
+
+            <div class="actions">
+
+              <form
+                method="POST"
+                action="/admin/payment/${payment.id}/approve"
+              >
+
+                <button
+                  class="approve"
+                  type="submit"
+                >
+                  ✓ Approve
+                </button>
+
+              </form>
+
+
+              <form
+                method="POST"
+                action="/admin/payment/${payment.id}/reject"
+              >
+
+                <button
+                  class="reject"
+                  type="submit"
+                >
+                  ✕ Reject
+                </button>
+
+              </form>
+
+            </div>
+
+          `;
+
+        } else {
+
+          actionHTML = `
+            <span class="action-done">
+              Action completed
+            </span>
+          `;
+
+        }
+
+
+        const proofHTML =
+          payment.proof
+
+          ? `
+
+            <a
+              class="proof-btn"
+              href="${payment.proof}"
+              target="_blank"
+              rel="noopener"
+            >
+              View Proof
+            </a>
+
+          `
+
+          : `
+
+            <span class="no-proof">
+              No Proof
+            </span>
+
+          `;
+
+
+        return `
 
 <tr>
 
   <td>
-    <strong>${escapeHTML(payment.transactionId)}</strong>
+
+    <strong>
+      ${escapeHTML(
+        payment.plan
+      )}
+    </strong>
+
   </td>
 
 
   <td>
-    ${escapeHTML(payment.tradingview)}
+
+    <strong class="amount-text">
+      ₹${Number(
+        payment.amount || 0
+      ).toLocaleString("en-IN")}
+    </strong>
+
   </td>
 
 
   <td>
-    ${escapeHTML(payment.telegram)}
+
+    <strong>
+      ${escapeHTML(
+        payment.transactionId
+      )}
+    </strong>
+
+  </td>
+
+
+  <td>
+    ${escapeHTML(
+      payment.tradingview
+    )}
+  </td>
+
+
+  <td>
+    ${escapeHTML(
+      payment.telegram
+    )}
   </td>
 
 
@@ -520,9 +824,15 @@ app.get("/admin", (req, res) => {
 
 
   <td>
-    <span class="status ${statusClass}">
-      ${escapeHTML(payment.status)}
+
+    <span
+      class="status ${statusClass}"
+    >
+      ${escapeHTML(
+        payment.status
+      )}
     </span>
+
   </td>
 
 
@@ -532,47 +842,44 @@ app.get("/admin", (req, res) => {
 
 
   <td>
-
-    <div class="actions">
-
-      <form
-        method="POST"
-        action="/admin/payment/${payment.id}/approve"
-      >
-
-        <button
-          class="approve"
-          type="submit"
-        >
-          ✓ Approve
-        </button>
-
-      </form>
-
-
-      <form
-        method="POST"
-        action="/admin/payment/${payment.id}/reject"
-      >
-
-        <button
-          class="reject"
-          type="submit"
-        >
-          ✕ Reject
-        </button>
-
-      </form>
-
-    </div>
-
+    ${actionHTML}
   </td>
 
 </tr>
 
-    `;
+        `;
 
-  }).join("");
+      }
+    )
+    .join("");
+
+
+  const total =
+    payments.length;
+
+
+  const pending =
+    payments.filter(
+      p =>
+        p.status ===
+        "Pending"
+    ).length;
+
+
+  const approved =
+    payments.filter(
+      p =>
+        p.status ===
+        "Approved"
+    ).length;
+
+
+  const rejected =
+    payments.filter(
+      p =>
+        p.status ===
+        "Rejected"
+    ).length;
 
 
   res.send(`
@@ -662,7 +969,7 @@ body {
 
   width: 100%;
 
-  max-width: 1400px;
+  max-width: 1500px;
 
   margin: auto;
 
@@ -767,7 +1074,7 @@ table {
 
   border-collapse: collapse;
 
-  min-width: 1000px;
+  min-width: 1250px;
 
 }
 
@@ -807,6 +1114,15 @@ td {
 tr:last-child td {
 
   border-bottom: 0;
+
+}
+
+
+.amount-text {
+
+  color: #a879ff;
+
+  white-space: nowrap;
 
 }
 
@@ -900,6 +1216,17 @@ tr:last-child td {
 }
 
 
+.action-done {
+
+  color: #8998b8;
+
+  font-size: 13px;
+
+  white-space: nowrap;
+
+}
+
+
 .proof-btn {
 
   display: inline-block;
@@ -922,6 +1249,8 @@ tr:last-child td {
   font-weight: 700;
 
   font-size: 13px;
+
+  white-space: nowrap;
 
 }
 
@@ -1010,10 +1339,11 @@ tr:last-child td {
 
 <div class="stats">
 
+
   <div class="stat">
 
     <span class="stat-number">
-      ${payments.length}
+      ${total}
     </span>
 
     <span class="stat-label">
@@ -1026,9 +1356,7 @@ tr:last-child td {
   <div class="stat">
 
     <span class="stat-number">
-      ${payments.filter(
-        p => p.status === "Pending"
-      ).length}
+      ${pending}
     </span>
 
     <span class="stat-label">
@@ -1041,9 +1369,7 @@ tr:last-child td {
   <div class="stat">
 
     <span class="stat-number">
-      ${payments.filter(
-        p => p.status === "Approved"
-      ).length}
+      ${approved}
     </span>
 
     <span class="stat-label">
@@ -1056,9 +1382,7 @@ tr:last-child td {
   <div class="stat">
 
     <span class="stat-number">
-      ${payments.filter(
-        p => p.status === "Rejected"
-      ).length}
+      ${rejected}
     </span>
 
     <span class="stat-label">
@@ -1066,6 +1390,7 @@ tr:last-child td {
     </span>
 
   </div>
+
 
 </div>
 
@@ -1077,6 +1402,10 @@ tr:last-child td {
 <thead>
 
 <tr>
+
+  <th>Plan</th>
+
+  <th>Amount</th>
 
   <th>UTR</th>
 
@@ -1101,15 +1430,22 @@ tr:last-child td {
 
 ${
   rows ||
+
   `
+
   <tr>
+
     <td
-      colspan="7"
+      colspan="9"
       class="empty"
     >
+
       No payment submissions yet.
+
     </td>
+
   </tr>
+
   `
 }
 
@@ -1137,26 +1473,36 @@ ${
 
 app.post(
   "/admin/payment/:id/approve",
-  (req, res) => {
+  (req,res) => {
 
-    const payments = getPayments();
+    const payments =
+      getPayments();
+
 
     const payment =
       payments.find(
-        p => p.id === req.params.id
+        p =>
+          p.id ===
+          req.params.id
       );
 
 
     if (payment) {
 
-      payment.status = "Approved";
+      payment.status =
+        "Approved";
 
-      savePayments(payments);
+      savePayments(
+        payments
+      );
 
     }
 
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
+
   }
 );
 
@@ -1167,26 +1513,36 @@ app.post(
 
 app.post(
   "/admin/payment/:id/reject",
-  (req, res) => {
+  (req,res) => {
 
-    const payments = getPayments();
+    const payments =
+      getPayments();
+
 
     const payment =
       payments.find(
-        p => p.id === req.params.id
+        p =>
+          p.id ===
+          req.params.id
       );
 
 
     if (payment) {
 
-      payment.status = "Rejected";
+      payment.status =
+        "Rejected";
 
-      savePayments(payments);
+      savePayments(
+        payments
+      );
 
     }
 
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
+
   }
 );
 
@@ -1197,21 +1553,43 @@ app.post(
 
 function escapeHTML(value) {
 
-  if (value === undefined || value === null) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
+
     return "";
+
   }
+
 
   return String(value)
 
-    .replace(/&/g, "&amp;")
+    .replace(
+      /&/g,
+      "&amp;"
+    )
 
-    .replace(/</g, "&lt;")
+    .replace(
+      /</g,
+      "&lt;"
+    )
 
-    .replace(/>/g, "&gt;")
+    .replace(
+      />/g,
+      "&gt;"
+    )
 
-    .replace(/"/g, "&quot;")
+    .replace(
+      /"/g,
+      "&quot;"
+    )
 
-    .replace(/'/g, "&#039;");
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
 }
 
 
@@ -1219,10 +1597,13 @@ function escapeHTML(value) {
 // START SERVER
 // ===============================
 
-app.listen(PORT, () => {
+app.listen(
+  PORT,
+  () => {
 
-  console.log(
-    `Vexora running on port ${PORT}`
-  );
+    console.log(
+      `Vexora running on port ${PORT}`
+    );
 
-});
+  }
+);
