@@ -34,6 +34,8 @@
       font-size:40px;
       font-weight:800;
       color:#fff !important;
+      text-decoration:none;
+      cursor:pointer;
     }
 
     .logo span{
@@ -67,6 +69,35 @@
       color:#9eacd0 !important;
       font-size:18px;
       line-height:1.6;
+    }
+
+    .selected-plan{
+      max-width:500px;
+      margin:0 auto 25px;
+      padding:18px;
+      text-align:center;
+      border-radius:18px;
+      background:#0b1730;
+      border:1px solid rgba(139,92,255,.35);
+    }
+
+    .selected-plan-label{
+      color:#9eacd0;
+      font-size:13px;
+      margin-bottom:6px;
+    }
+
+    .selected-plan-name{
+      color:#fff;
+      font-size:21px;
+      font-weight:800;
+    }
+
+    .selected-plan-amount{
+      margin-top:5px;
+      color:#a879ff;
+      font-size:27px;
+      font-weight:800;
     }
 
     .card{
@@ -105,8 +136,6 @@
       line-height:1.5;
     }
 
-    /* QR */
-
     .qr-box{
       display:none;
       margin-top:20px;
@@ -128,8 +157,6 @@
       background:#fff;
     }
 
-    /* ADDRESS */
-
     .payment-address{
       margin-top:15px;
       padding:14px;
@@ -149,8 +176,6 @@
       color:#9eacd0 !important;
       font-size:13px;
     }
-
-    /* COPY + DOWNLOAD */
 
     .qr-actions{
       display:flex;
@@ -202,8 +227,6 @@
       font-weight:600;
     }
 
-    /* CONTINUE */
-
     .continue-btn{
       display:block;
       width:100%;
@@ -222,8 +245,6 @@
     .continue-btn:active{
       transform:scale(.98);
     }
-
-    /* MOBILE */
 
     @media(max-width:520px){
 
@@ -283,7 +304,7 @@
 <body>
 
 <header class="topbar">
-  <div class="logo">V<span>exora</span></div>
+  <a href="/" class="logo">V<span>exora</span></a>
 </header>
 
 <main class="container">
@@ -293,9 +314,15 @@
     <p>Select a payment method and tap to show the QR.</p>
   </section>
 
+  <div class="selected-plan">
+    <div class="selected-plan-label">Selected Plan</div>
+    <div id="selectedPlan" class="selected-plan-name">Loading...</div>
+    <div id="selectedAmount" class="selected-plan-amount">₹0</div>
+  </div>
+
   <section class="card">
 
-    <!-- ================= UPI ================= -->
+    <!-- UPI -->
 
     <div class="card payment-method" onclick="showQR('upi',this)">
 
@@ -334,10 +361,7 @@
             ↓ Download QR
           </a>
 
-          <span
-            id="upi-status"
-            class="copy-status">
-          </span>
+          <span id="upi-status" class="copy-status"></span>
 
         </div>
 
@@ -345,7 +369,7 @@
     </div>
 
 
-    <!-- ================= USDT TRC20 ================= -->
+    <!-- TRC20 -->
 
     <div class="card payment-method" onclick="showQR('trc20',this)">
 
@@ -384,10 +408,7 @@
             ↓ Download QR
           </a>
 
-          <span
-            id="trc20-status"
-            class="copy-status">
-          </span>
+          <span id="trc20-status" class="copy-status"></span>
 
         </div>
 
@@ -395,7 +416,7 @@
     </div>
 
 
-    <!-- ================= USDT BEP20 ================= -->
+    <!-- BEP20 -->
 
     <div class="card payment-method" onclick="showQR('bep20',this)">
 
@@ -434,10 +455,7 @@
             ↓ Download QR
           </a>
 
-          <span
-            id="bep20-status"
-            class="copy-status">
-          </span>
+          <span id="bep20-status" class="copy-status"></span>
 
         </div>
 
@@ -445,7 +463,7 @@
     </div>
 
 
-    <!-- ================= ETH ERC20 ================= -->
+    <!-- ETH ERC20 -->
 
     <div class="card payment-method" onclick="showQR('eth',this)">
 
@@ -484,10 +502,7 @@
             ↓ Download QR
           </a>
 
-          <span
-            id="eth-status"
-            class="copy-status">
-          </span>
+          <span id="eth-status" class="copy-status"></span>
 
         </div>
 
@@ -495,9 +510,8 @@
     </div>
 
 
-    <!-- ================= CONTINUE ================= -->
-
     <a
+      id="continueBtn"
       class="continue-btn"
       href="/submit">
       I Have Paid — Continue
@@ -510,7 +524,70 @@
 
 <script>
 
-/* ================= SHOW QR ================= */
+const params =
+  new URLSearchParams(window.location.search);
+
+const selectedPlan =
+  params.get("plan");
+
+
+const planData = {
+
+  "7days": {
+    name: "7 Days",
+    amount: "999"
+  },
+
+  "15days": {
+    name: "15 Days",
+    amount: "1499"
+  },
+
+  "30days": {
+    name: "30 Days",
+    amount: "2499"
+  },
+
+  "lifetime": {
+    name: "Lifetime",
+    amount: "11000"
+  }
+
+};
+
+
+const selected =
+  planData[selectedPlan];
+
+
+if (selected) {
+
+  document.getElementById("selectedPlan")
+    .textContent = selected.name;
+
+  document.getElementById("selectedAmount")
+    .textContent =
+      "₹" +
+      Number(selected.amount)
+        .toLocaleString("en-IN");
+
+  document.getElementById("continueBtn")
+    .href =
+      "/submit?plan=" +
+      encodeURIComponent(selectedPlan);
+
+} else {
+
+  document.getElementById("selectedPlan")
+    .textContent = "Plan not selected";
+
+  document.getElementById("selectedAmount")
+    .textContent = "₹0";
+
+}
+
+
+/* SHOW QR */
 
 function showQR(id, el) {
 
@@ -526,19 +603,24 @@ function showQR(id, el) {
       card.classList.remove("active");
     });
 
-  var selected = document.getElementById(id);
+  var selectedQR =
+    document.getElementById(id);
 
-  if (selected) {
-    selected.classList.add("show");
+  if (selectedQR) {
+    selectedQR.classList.add("show");
   }
 
   el.classList.add("active");
 }
 
 
-/* ================= COPY ADDRESS ================= */
+/* COPY ADDRESS */
 
-function copyAddress(event, elementId, statusId) {
+function copyAddress(
+  event,
+  elementId,
+  statusId
+) {
 
   event.stopPropagation();
 
@@ -555,6 +637,7 @@ function copyAddress(event, elementId, statusId) {
   var text =
     element.innerText.trim();
 
+
   function copied() {
 
     if (status) {
@@ -567,8 +650,11 @@ function copyAddress(event, elementId, statusId) {
         status.textContent = "";
 
       },2000);
+
     }
+
   }
+
 
   if (
     navigator.clipboard &&
@@ -579,9 +665,7 @@ function copyAddress(event, elementId, statusId) {
       .writeText(text)
       .then(copied)
       .catch(function() {
-
         fallbackCopy(text,copied);
-
       });
 
   } else {
@@ -589,10 +673,11 @@ function copyAddress(event, elementId, statusId) {
     fallbackCopy(text,copied);
 
   }
+
 }
 
 
-/* ================= FALLBACK COPY ================= */
+/* FALLBACK COPY */
 
 function fallbackCopy(text,callback) {
 
