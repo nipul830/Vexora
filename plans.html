@@ -1,326 +1,273 @@
 <!doctype html>
 
-<html lang="en">
+<html lang="en">  
+<head>  
+  <meta charset="utf-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1">  
+  <title>Vexora — Plans</title>    <style>  
+    *{box-sizing:border-box}  
+  
+    body{  
+      margin:0;  
+      font-family:Arial,Helvetica,sans-serif;  
+      color:#f5f7ff;  
+      background:#070d1d;  
+    }  
+  
+    a{text-decoration:none}  
+  
+    .topbar{  
+      height:90px;  
+      display:flex;  
+      align-items:center;  
+      padding:0 28px;  
+      background:#080d1b;  
+      border-bottom:1px solid #202c49;  
+    }  
+  
+    .logo{  
+      font-size:36px;  
+      font-weight:800;  
+    }  
+  
+    .logo span{color:#8b5cff}  
+  
+    .container{  
+      max-width:950px;  
+      margin:auto;  
+      padding:35px 20px 60px;  
+    }  
+  
+    .hero{  
+      text-align:center;  
+      padding:20px 10px 35px;  
+    }  
+  
+    .hero h1{  
+      font-size:48px;  
+      margin-bottom:15px;  
+    }  
+  
+    .hero p{  
+      color:#9eaccb;  
+      font-size:18px;  
+      line-height:1.6;  
+    }  
+  
+    .plans{  
+      display:grid;  
+      grid-template-columns:repeat(2,1fr);  
+      gap:18px;  
+    }  
+  
+    .plan{  
+      background:#101a31;  
+      border:1px solid #29395b;  
+      border-radius:22px;  
+      padding:28px;  
+    }  
+  
+    .plan.free{  
+      border-color:#28875d;  
+    }  
+  
+    .plan.lifetime{  
+      border-color:#8b5cff;  
+    }  
+  
+    .plan h2{  
+      margin:0 0 10px;  
+      font-size:25px;  
+    }  
+  
+    .price{  
+      font-size:38px;  
+      font-weight:800;  
+      margin:15px 0;  
+      color:#a879ff;  
+    }  
+  
+    .plan p{  
+      min-height:55px;  
+      color:#9eaccb;  
+      line-height:1.6;  
+    }  
+  
+    .btn{  
+      display:block;  
+      text-align:center;  
+      padding:16px;  
+      border-radius:14px;  
+      background:linear-gradient(90deg,#8b35ff,#147cff);  
+      color:white;  
+      font-weight:800;  
+      margin-top:20px;  
+    }  
+  
+    .free .btn{  
+      background:#168653;  
+    }  
+  
+    .support{  
+      text-align:center;  
+      margin-top:35px;  
+    }  
+  
+    .support p{  
+      color:#9eaccb;  
+    }  
+  
+    @media(max-width:650px){  
+      .plans{  
+        grid-template-columns:1fr;  
+      }  
+  
+      .hero h1{  
+        font-size:39px;  
+      }  
+    }  
+  </style>  </head>  <body>  <header class="topbar">  
+  <div class="logo">V<span>exora</span></div>  
+</header>  <main class="container">    <section class="hero">  <h1>  
+  Choose Your <span style="color:#8b5cff">Plan</span>  
+</h1>  
 
-<head>
-
-<meta charset="utf-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1"
->
-
-<title>Vexora — Plans</title>
-
-<style>
-
-* {
-  box-sizing:border-box;
-}
-
-body {
-  margin:0;
-  background:#070d1d;
-  color:#f5f7ff;
-  font-family:Arial,sans-serif;
-}
-
-.topbar {
-  height:80px;
-  display:flex;
-  align-items:center;
-  padding:0 25px;
-  background:#080d1b;
-  border-bottom:1px solid #202c49;
-}
-
-.logo {
-  font-size:34px;
-  font-weight:900;
-}
-
-.logo span {
-  color:#8b5cff;
-}
-
-.container {
-  max-width:950px;
-  margin:auto;
-  padding:35px 20px 60px;
-}
-
-.hero {
-  text-align:center;
-  margin-bottom:30px;
-}
-
-.hero h1 {
-  font-size:45px;
-}
-
-.hero p {
-  color:#9eaccb;
-}
-
-.plans {
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:18px;
-}
-
-.plan {
-  padding:27px;
-  border-radius:22px;
-  background:#101a31;
-  border:1px solid #29395b;
-}
-
-.plan h2 {
-  margin:0;
-}
-
-.price {
-  margin:15px 0;
-  color:#a879ff;
-  font-size:37px;
-  font-weight:900;
-}
-
-.plan p {
-  color:#9eaccb;
-  line-height:1.6;
-}
-
-.btn {
-  display:block;
-  padding:15px;
-  margin-top:20px;
-  text-align:center;
-  border-radius:13px;
-  color:white;
-  text-decoration:none;
-  font-weight:800;
-  background:linear-gradient(
-    90deg,
-    #8b35ff,
-    #147cff
-  );
-}
-
-.free {
-  border-color:#28875d;
-}
-
-.free .btn {
-  background:#168653;
-}
-
-.lifetime {
-  border-color:#8b5cff;
-}
-
-.support {
-  margin-top:30px;
-  text-align:center;
-}
-
-.support p {
-  color:#9eaccb;
-}
-
-@media(max-width:650px) {
-
-  .plans {
-    grid-template-columns:1fr;
-  }
-
-  .hero h1 {
-    font-size:37px;
-  }
-
-}
-
-</style>
-
-</head>
-
-<body>
-
-<header class="topbar">
-
-<div class="logo">
-V<span>exora</span>
-</div>
-
-</header>
-
-<main class="container">
-
-<section class="hero">
-
-<h1>
-Choose Your
-<span style="color:#8b5cff">
-Plan
-</span>
-</h1>
-
-<p>
-Select your preferred Vexora membership plan.
+<p>  
+  Select your preferred Vexora membership plan.  
 </p>
 
-</section>
+  </section>    <section class="plans">  <!-- 1 DAY FREE -->  
 
-<section class="plans">
+<div class="plan free">  
 
-<!-- 1 DAY FREE -->
+  <h2>1 Day Free</h2>  
 
-<div class="plan free">
+  <div class="price">  
+    FREE  
+  </div>  
 
-<h2>
-1 Day Free
-</h2>
+  <p>  
+    Try Vexora for 1 day.  
+    Contact us on WhatsApp to activate your free access.  
+  </p>  
 
-<div class="price">
-FREE
+  <a  
+    class="btn"  
+    href="https://wa.me/916371406885?text=Hi%20Vexora%2C%20I%20want%20the%201%20Day%20Free%20plan."  
+    target="_blank"  
+  >  
+    Get 1 Day Free  
+  </a>  
+
+</div>  
+
+
+<!-- 7 DAYS -->  
+
+<div class="plan">  
+
+  <h2>7 Days</h2>  
+
+  <div class="price">  
+    ₹999  
+  </div>  
+
+  <p>  
+    Premium Vexora access for 7 days.  
+  </p>  
+
+  <a  
+    class="btn"  
+    href="/payment?plan=7days"  
+  >  
+    Select Plan  
+  </a>  
+
+</div>  
+
+
+<!-- 15 DAYS -->  
+
+<div class="plan">  
+
+  <h2>15 Days</h2>  
+
+  <div class="price">  
+    ₹1,499  
+  </div>  
+
+  <p>  
+    Premium Vexora access for 15 days.  
+  </p>  
+
+  <a  
+    class="btn"  
+    href="/payment?plan=15days"  
+  >  
+    Select Plan  
+  </a>  
+
+</div>  
+
+
+<!-- 30 DAYS -->  
+
+<div class="plan">  
+
+  <h2>30 Days</h2>  
+
+  <div class="price">  
+    ₹2,499  
+  </div>  
+
+  <p>  
+    Premium Vexora access for 30 days.  
+  </p>  
+
+  <a  
+    class="btn"  
+    href="/payment?plan=30days"  
+  >  
+    Select Plan  
+  </a>  
+
+</div>  
+
+
+<!-- LIFETIME -->  
+
+<div class="plan lifetime">  
+
+  <h2>Lifetime</h2>  
+
+  <div class="price">  
+    ₹11,000  
+  </div>  
+
+  <p>  
+    Lifetime Vexora premium access.  
+  </p>  
+
+  <a  
+    class="btn"  
+    href="/payment?plan=lifetime"  
+  >  
+    Select Plan  
+  </a>  
+
 </div>
 
-<p>
-Try Vexora for 1 day.
-Contact us on WhatsApp to activate your free access.
-</p>
+  </section>    <section class="support">  <p>  
+  Need help with a plan?  
+</p>  
 
-<a
- class="btn"
- href="https://wa.me/916371406885?text=Hi%20Vexora%2C%20I%20want%20the%201%20Day%20Free%20plan."
- target="_blank"
->
-Get 1 Day Free
+<a  
+  class="btn"  
+  href="https://wa.me/916371406885"  
+  target="_blank"  
+>  
+  WhatsApp Support  
 </a>
 
-</div>
-
-<!-- 7 DAYS -->
-
-<div class="plan">
-
-<h2>
-7 Days
-</h2>
-
-<div class="price">
-₹999
-</div>
-
-<p>
-Premium Vexora access for 7 days.
-</p>
-
-<a
- class="btn"
- href="/payment?plan=7days"
->
-Select Plan
-</a>
-
-</div>
-
-<!-- 15 DAYS -->
-
-<div class="plan">
-
-<h2>
-15 Days
-</h2>
-
-<div class="price">
-₹1,499
-</div>
-
-<p>
-Premium Vexora access for 15 days.
-</p>
-
-<a
- class="btn"
- href="/payment?plan=15days"
->
-Select Plan
-</a>
-
-</div>
-
-<!-- 30 DAYS -->
-
-<div class="plan">
-
-<h2>
-30 Days
-</h2>
-
-<div class="price">
-₹2,499
-</div>
-
-<p>
-Premium Vexora access for 30 days.
-</p>
-
-<a
- class="btn"
- href="/payment?plan=30days"
->
-Select Plan
-</a>
-
-</div>
-
-<!-- LIFETIME -->
-
-<div class="plan lifetime">
-
-<h2>
-Lifetime
-</h2>
-
-<div class="price">
-₹11,000
-</div>
-
-<p>
-Lifetime Vexora premium access.
-</p>
-
-<a
- class="btn"
- href="/payment?plan=lifetime"
->
-Select Plan
-</a>
-
-</div>
-
-</section>
-
-<section class="support">
-
-<p>
-Need help with a plan?
-</p>
-
-<a
- class="btn"
- href="https://wa.me/916371406885"
- target="_blank"
->
-WhatsApp Support
-</a>
-
-</section>
-
-</main>
-
-</body>
-
-</html>
+  </section>  </main>  </body>  
+</html>  
