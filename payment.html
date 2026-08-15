@@ -1,373 +1,718 @@
 <!doctype html>
-
 <html lang="en">
-
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vexora Payment</title>
 
-<meta charset="utf-8">
+  <style>
+    *{
+      box-sizing:border-box;
+    }
 
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1"
->
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      background:#050b1c !important;
+      color:#f4f7ff !important;
+      font-family:Arial,Helvetica,sans-serif;
+    }
 
-<title>Vexora — Payment</title>
+    body{
+      min-height:100vh;
+    }
 
-<style>
+    .topbar{
+      width:100%;
+      padding:22px 32px;
+      background:#071025 !important;
+      border-bottom:1px solid rgba(139,92,255,.25);
+    }
 
-* {
-  box-sizing:border-box;
-}
+    .logo{
+      font-size:40px;
+      font-weight:800;
+      color:#fff !important;
+      text-decoration:none;
+      cursor:pointer;
+    }
 
-body {
-  margin:0;
-  background:#050b1d;
-  color:#fff;
-  font-family:Arial,sans-serif;
-  padding:20px;
-}
+    .logo span{
+      background:linear-gradient(90deg,#a12cff,#087cff);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent !important;
+    }
 
-.card {
-  width:100%;
-  max-width:550px;
-  margin:30px auto;
-  padding:28px;
-  border-radius:24px;
-  background:#0d1a36;
-  border:1px solid rgba(139,92,255,.35);
-}
+    .container{
+      width:100%;
+      max-width:900px;
+      margin:0 auto;
+      padding:30px 18px 60px;
+    }
 
-h1 {
-  text-align:center;
-}
+    .hero-small{
+      text-align:center;
+      padding:20px 10px 30px;
+    }
 
-.plan {
-  text-align:center;
-  padding:18px;
-  border-radius:15px;
-  background:#071126;
-}
+    .hero-small h1{
+      margin:0 0 12px;
+      color:#f5f7ff !important;
+      font-size:42px;
+      line-height:1.15;
+    }
 
-.plan-name {
-  font-size:24px;
-  font-weight:800;
-}
+    .hero-small p{
+      margin:0;
+      color:#9eacd0 !important;
+      font-size:18px;
+      line-height:1.6;
+    }
 
-.amount {
-  margin-top:8px;
-  color:#a879ff;
-  font-size:30px;
-  font-weight:900;
-}
+    .selected-plan{
+      max-width:500px;
+      margin:0 auto 25px;
+      padding:18px;
+      text-align:center;
+      border-radius:18px;
+      background:#0b1730;
+      border:1px solid rgba(139,92,255,.35);
+    }
 
-label {
-  display:block;
-  margin-top:18px;
-  margin-bottom:7px;
-  color:#aebce0;
-  font-weight:700;
-}
+    .selected-plan-label{
+      color:#9eacd0;
+      font-size:13px;
+      margin-bottom:6px;
+    }
 
-input,
-select {
-  width:100%;
-  padding:14px;
-  border:1px solid #29395b;
-  border-radius:12px;
-  background:#071126;
-  color:#fff;
-  outline:none;
-}
+    .selected-plan-name{
+      color:#fff;
+      font-size:21px;
+      font-weight:800;
+    }
 
-.qr {
-  margin-top:20px;
-  text-align:center;
-}
+    .selected-plan-amount{
+      margin-top:5px;
+      color:#a879ff;
+      font-size:27px;
+      font-weight:800;
+    }
 
-.qr img {
-  width:220px;
-  max-width:100%;
-  border-radius:15px;
-  background:#fff;
-  padding:8px;
-}
+    .card{
+      background:#0c1830 !important;
+      color:#f4f7ff !important;
+      border:1px solid rgba(96,125,180,.30);
+      border-radius:24px;
+      padding:28px;
+      margin-bottom:20px;
+    }
 
-.method {
-  margin-top:18px;
-}
+    .payment-method{
+      cursor:pointer;
+      transition:.2s ease;
+    }
 
-.submit {
-  width:100%;
-  border:0;
-  padding:16px;
-  margin-top:25px;
-  border-radius:14px;
-  color:#fff;
-  font-size:17px;
-  font-weight:800;
-  background:linear-gradient(
-    135deg,
-    #8b2cff,
-    #087cff
-  );
-}
+    .payment-method:hover{
+      border-color:rgba(139,92,255,.55);
+    }
 
-.back {
-  display:block;
-  margin-top:15px;
-  text-align:center;
-  color:#9eacd0;
-  text-decoration:none;
-}
+    .payment-method.active{
+      border-color:#8b5cff !important;
+      box-shadow:0 0 0 2px rgba(139,92,255,.25);
+    }
 
-</style>
+    .payment-method h2{
+      margin:0 0 10px;
+      color:#f5f7ff !important;
+      font-size:28px;
+    }
 
+    .payment-method p{
+      margin:0;
+      color:#9eacd0 !important;
+      font-size:17px;
+      line-height:1.5;
+    }
+
+    .qr-box{
+      display:none;
+      margin-top:20px;
+      text-align:center;
+    }
+
+    .qr-box.show{
+      display:block;
+    }
+
+    .qr-box img{
+      width:100%;
+      max-width:360px;
+      height:auto;
+      display:block;
+      margin:15px auto;
+      padding:0;
+      border-radius:14px;
+      background:#fff;
+    }
+
+    .payment-address{
+      margin-top:15px;
+      padding:14px;
+      border:1px solid rgba(139,92,255,.35);
+      border-radius:12px;
+      background:#070f22 !important;
+      color:#dce5ff !important;
+      font-size:14px;
+      line-height:1.5;
+      word-break:break-all;
+      user-select:text;
+      text-align:left;
+    }
+
+    .payment-note{
+      margin-top:10px;
+      color:#9eacd0 !important;
+      font-size:13px;
+    }
+
+    .qr-actions{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
+    .copy-btn,
+    .download-btn{
+      border:0;
+      border-radius:12px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      white-space:nowrap;
+    }
+
+    .copy-btn{
+      background:linear-gradient(135deg,#8b2cff,#087cff) !important;
+      color:#fff !important;
+    }
+
+    .download-btn{
+      background:#17243d !important;
+      color:#fff !important;
+      border:1px solid rgba(139,92,255,.45);
+    }
+
+    .copy-btn:active,
+    .download-btn:active{
+      transform:scale(.97);
+    }
+
+    .copy-status{
+      display:block;
+      width:100%;
+      min-height:20px;
+      margin-top:4px;
+      color:#72f0a3 !important;
+      font-size:13px;
+      font-weight:600;
+    }
+
+    .continue-btn{
+      display:block;
+      width:100%;
+      margin-top:25px;
+      padding:17px 20px;
+      text-align:center;
+      text-decoration:none;
+      border-radius:16px;
+      background:linear-gradient(90deg,#9b2cff,#087cff) !important;
+      color:#fff !important;
+      font-size:18px;
+      font-weight:700;
+      border:0;
+    }
+
+    .continue-btn:active{
+      transform:scale(.98);
+    }
+
+    @media(max-width:520px){
+
+      .topbar{
+        padding:18px 20px;
+      }
+
+      .logo{
+        font-size:34px;
+      }
+
+      .container{
+        padding:20px 14px 50px;
+      }
+
+      .hero-small{
+        padding:15px 5px 25px;
+      }
+
+      .hero-small h1{
+        font-size:32px;
+      }
+
+      .hero-small p{
+        font-size:16px;
+      }
+
+      .card{
+        padding:20px;
+        border-radius:20px;
+      }
+
+      .payment-method h2{
+        font-size:24px;
+      }
+
+      .payment-method p{
+        font-size:16px;
+      }
+
+      .qr-actions{
+        flex-direction:column;
+      }
+
+      .copy-btn,
+      .download-btn{
+        width:100%;
+      }
+
+      .payment-address{
+        font-size:13px;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="card">
+<header class="topbar">
+  <a href="/" class="logo">V<span>exora</span></a>
+</header>
 
-<h1>
-Complete Payment
-</h1>
+<main class="container">
 
-<div class="plan">
+  <section class="hero-small">
+    <h1>Complete Your Payment</h1>
+    <p>Select a payment method and tap to show the QR.</p>
+  </section>
 
-<div
- id="planName"
- class="plan-name"
->
-Loading...
-</div>
+  <div class="selected-plan">
+    <div class="selected-plan-label">Selected Plan</div>
+    <div id="selectedPlan" class="selected-plan-name">Loading...</div>
+    <div id="selectedAmount" class="selected-plan-amount">₹0</div>
+  </div>
 
-<div
- id="amount"
- class="amount"
->
-₹0
-</div>
+  <section class="card">
 
-</div>
+    <!-- UPI -->
 
-<form
- action="/submit-payment"
- method="POST"
- enctype="multipart/form-data"
->
+    <div class="card payment-method" onclick="showQR('upi',this)">
 
-<input
- type="hidden"
- name="plan"
- id="planInput"
->
+      <h2>UPI / PhonePe</h2>
+      <p>Tap to show the UPI QR.</p>
 
-<label>
-Payment Method
-</label>
+      <div id="upi" class="qr-box">
 
-<select
- id="method"
- onchange="changeQR()"
->
+        <div class="payment-address" id="upi-address">
+          +91 70676 03886
+        </div>
 
-<option value="upi">
-UPI / PhonePe
-</option>
+        <div class="payment-note">
+          UPI / PhonePe contact
+        </div>
 
-<option value="trc20">
-USDT TRC20
-</option>
+        <img
+          src="/assets/upi-phonepe.jpg?v=4"
+          alt="UPI PhonePe QR"
+        >
 
-<option value="bep20">
-USDT BEP20
-</option>
+        <div class="qr-actions">
 
-<option value="eth">
-ETH / ERC20
-</option>
+          <button
+            type="button"
+            class="copy-btn"
+            onclick="copyAddress(event,'upi-address','upi-status')">
+            📋 Copy
+          </button>
 
-</select>
+          <a
+            class="download-btn"
+            href="/assets/upi-phonepe.jpg"
+            download="vexora-upi-phonepe-qr.jpg"
+            onclick="event.stopPropagation()">
+            ↓ Download QR
+          </a>
 
-<div class="qr">
+          <span id="upi-status" class="copy-status"></span>
 
-<img
- id="qrImage"
- src="/assets/upi-phonepe.jpg"
- alt="Payment QR"
->
+        </div>
 
-</div>
+      </div>
+    </div>
 
-<label>
-UTR / Transaction ID
-</label>
 
-<input
- type="text"
- name="transactionId"
- required
- placeholder="Enter UTR / Transaction ID"
->
+    <!-- TRC20 -->
 
-<label>
-TradingView Username
-</label>
+    <div class="card payment-method" onclick="showQR('trc20',this)">
 
-<input
- type="text"
- name="tradingview"
- placeholder="TradingView username"
->
+      <h2>USDT — TRC20</h2>
+      <p>Tap to show the TRC20 QR.</p>
 
-<label>
-Telegram Username
-</label>
+      <div id="trc20" class="qr-box">
 
-<input
- type="text"
- name="telegram"
- placeholder="@username"
->
+        <div class="payment-address" id="trc20-address">
+          TGnAWoHjXizow51pMuwhwKiboYy22DC2bJ
+        </div>
 
-<label>
-Payment Proof
-</label>
+        <div class="payment-note">
+          USDT network: TRC20
+        </div>
 
-<input
- type="file"
- name="proof"
- accept="image/*"
- required
->
+        <img
+          src="/assets/usdt-trc20.jpg?v=4"
+          alt="USDT TRC20 QR"
+        >
 
-<button
- class="submit"
- type="submit"
->
-Submit Payment
-</button>
+        <div class="qr-actions">
 
-</form>
+          <button
+            type="button"
+            class="copy-btn"
+            onclick="copyAddress(event,'trc20-address','trc20-status')">
+            📋 Copy
+          </button>
 
-<a
- class="back"
- href="/plans"
->
-← Back to Plans
-</a>
+          <a
+            class="download-btn"
+            href="/assets/usdt-trc20.jpg"
+            download="vexora-usdt-trc20-qr.jpg"
+            onclick="event.stopPropagation()">
+            ↓ Download QR
+          </a>
 
-</div>
+          <span id="trc20-status" class="copy-status"></span>
+
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- BEP20 -->
+
+    <div class="card payment-method" onclick="showQR('bep20',this)">
+
+      <h2>USDT — BEP20</h2>
+      <p>Tap to show the BEP20 QR.</p>
+
+      <div id="bep20" class="qr-box">
+
+        <div class="payment-address" id="bep20-address">
+          0x4ab23A898208485D2bDa4C34D28C57649C1752fD
+        </div>
+
+        <div class="payment-note">
+          USDT network: BEP20
+        </div>
+
+        <img
+          src="/assets/usdt-bep20.jpg?v=4"
+          alt="USDT BEP20 QR"
+        >
+
+        <div class="qr-actions">
+
+          <button
+            type="button"
+            class="copy-btn"
+            onclick="copyAddress(event,'bep20-address','bep20-status')">
+            📋 Copy
+          </button>
+
+          <a
+            class="download-btn"
+            href="/assets/usdt-bep20.jpg"
+            download="vexora-usdt-bep20-qr.jpg"
+            onclick="event.stopPropagation()">
+            ↓ Download QR
+          </a>
+
+          <span id="bep20-status" class="copy-status"></span>
+
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ETH ERC20 -->
+
+    <div class="card payment-method" onclick="showQR('eth',this)">
+
+      <h2>ETH — ERC20</h2>
+      <p>Tap to show the ERC20 QR.</p>
+
+      <div id="eth" class="qr-box">
+
+        <div class="payment-address" id="eth-address">
+          0x4ab23A898208485D2bDa4C34D28C57649C1752fD
+        </div>
+
+        <div class="payment-note">
+          ETH network: ERC20
+        </div>
+
+        <img
+          src="/assets/eth-erc20.jpg?v=4"
+          alt="ETH ERC20 QR"
+        >
+
+        <div class="qr-actions">
+
+          <button
+            type="button"
+            class="copy-btn"
+            onclick="copyAddress(event,'eth-address','eth-status')">
+            📋 Copy
+          </button>
+
+          <a
+            class="download-btn"
+            href="/assets/eth-erc20.jpg"
+            download="vexora-eth-erc20-qr.jpg"
+            onclick="event.stopPropagation()">
+            ↓ Download QR
+          </a>
+
+          <span id="eth-status" class="copy-status"></span>
+
+        </div>
+
+      </div>
+    </div>
+
+
+    <a
+      id="continueBtn"
+      class="continue-btn"
+      href="/submit">
+      I Have Paid — Continue
+    </a>
+
+  </section>
+
+</main>
+
 
 <script>
 
 const params =
-new URLSearchParams(
-  window.location.search
-);
+  new URLSearchParams(window.location.search);
 
-const plan =
-params.get("plan") ||
-"7days";
+const selectedPlan =
+  params.get("plan");
 
-const plans = {
+
+const planData = {
 
   "7days": {
-    name:"7 Days",
-    amount:999
+    name: "7 Days",
+    amount: "999"
   },
 
   "15days": {
-    name:"15 Days",
-    amount:1499
+    name: "15 Days",
+    amount: "1499"
   },
 
   "30days": {
-    name:"30 Days",
-    amount:2499
+    name: "30 Days",
+    amount: "2499"
   },
 
   "lifetime": {
-    name:"Lifetime",
-    amount:11000
+    name: "Lifetime",
+    amount: "11000"
   }
 
 };
 
+
 const selected =
-plans[plan] ||
-plans["7days"];
+  planData[selectedPlan];
 
-document.getElementById(
-  "planName"
-).textContent =
-  selected.name;
 
-document.getElementById(
-  "amount"
-).textContent =
-  "₹" +
-  selected.amount.toLocaleString(
-    "en-IN"
-  );
+if (selected) {
 
-document.getElementById(
-  "planInput"
-).value =
-  plan;
+  document.getElementById("selectedPlan")
+    .textContent = selected.name;
 
-function changeQR() {
+  document.getElementById("selectedAmount")
+    .textContent =
+      "₹" +
+      Number(selected.amount)
+        .toLocaleString("en-IN");
 
-  const method =
-    document.getElementById(
-      "method"
-    ).value;
+  document.getElementById("continueBtn")
+    .href =
+      "/submit?plan=" +
+      encodeURIComponent(selectedPlan);
 
-  const qr =
-    document.getElementById(
-      "qrImage"
-    );
+} else {
+
+  document.getElementById("selectedPlan")
+    .textContent = "Plan not selected";
+
+  document.getElementById("selectedAmount")
+    .textContent = "₹0";
+
+}
+
+
+/* SHOW QR */
+
+function showQR(id, el) {
+
+  document
+    .querySelectorAll(".qr-box")
+    .forEach(function(box) {
+      box.classList.remove("show");
+    });
+
+  document
+    .querySelectorAll(".payment-method")
+    .forEach(function(card) {
+      card.classList.remove("active");
+    });
+
+  var selectedQR =
+    document.getElementById(id);
+
+  if (selectedQR) {
+    selectedQR.classList.add("show");
+  }
+
+  el.classList.add("active");
+}
+
+
+/* COPY ADDRESS */
+
+function copyAddress(
+  event,
+  elementId,
+  statusId
+) {
+
+  event.stopPropagation();
+
+  var element =
+    document.getElementById(elementId);
+
+  var status =
+    document.getElementById(statusId);
+
+  if (!element) {
+    return;
+  }
+
+  var text =
+    element.innerText.trim();
+
+
+  function copied() {
+
+    if (status) {
+
+      status.textContent =
+        "✓ Copied!";
+
+      setTimeout(function() {
+
+        status.textContent = "";
+
+      },2000);
+
+    }
+
+  }
+
 
   if (
-    method === "upi"
+    navigator.clipboard &&
+    window.isSecureContext
   ) {
 
-    qr.src =
-      "/assets/upi-phonepe.jpg";
+    navigator.clipboard
+      .writeText(text)
+      .then(copied)
+      .catch(function() {
+        fallbackCopy(text,copied);
+      });
+
+  } else {
+
+    fallbackCopy(text,copied);
 
   }
 
-  else if (
-    method === "trc20"
-  ) {
+}
 
-    qr.src =
-      "/assets/usdt-trc20.jpg";
+
+/* FALLBACK COPY */
+
+function fallbackCopy(text,callback) {
+
+  var textarea =
+    document.createElement("textarea");
+
+  textarea.value = text;
+
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+
+  textarea.focus();
+  textarea.select();
+
+  try {
+
+    document.execCommand("copy");
+
+    callback();
+
+  } catch(e) {
+
+    alert(
+      "Address copy nahi hua. Address ko long press karke copy karein."
+    );
 
   }
 
-  else if (
-    method === "bep20"
-  ) {
-
-    qr.src =
-      "/assets/usdt-bep20.jpg";
-
-  }
-
-  else if (
-    method === "eth"
-  ) {
-
-    qr.src =
-      "/assets/eth-erc20.jpg";
-
-  }
-
+  document.body.removeChild(textarea);
 }
 
 </script>
 
 </body>
-
 </html>
