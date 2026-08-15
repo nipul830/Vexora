@@ -1,17 +1,152 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vexora Payment</title><link rel="stylesheet" href="/styles.css"></head><body>
-<header class="topbar"><div class="logo">V<span>exora</span></div></header>
-<main class="container"><section class="hero-small"><h1>Complete Your Payment</h1><p>Select a payment method and scan the QR.</p></section>
-<section class="card">
-<div class="card payment-method" onclick="showQR('upi',this)"><h2>UPI / PhonePe</h2><p>Tap to show the UPI QR.</p><div id="upi" class="qr-box"><img src="/assets/upi-phonepe.jpg" alt="UPI PhonePe QR"></div></div>
-<div class="card payment-method" onclick="showQR('trc20',this)"><h2>USDT — TRC20</h2><p>Tap to show the TRC20 QR.</p><div id="trc20" class="qr-box"><img src="/assets/usdt-trc20.jpg" alt="USDT TRC20 QR"></div></div>
-<div class="card payment-method" onclick="showQR('bep20',this)"><h2>USDT — BEP20</h2><p>Tap to show the BEP20 QR.</p><div id="bep20" class="qr-box"><img src="/assets/usdt-bep20.jpg" alt="USDT BEP20 QR"></div></div>
-<div class="card payment-method" onclick="showQR('eth',this)"><h2>ETH — ERC20</h2><p>Tap to show the ERC20 QR.</p><div id="eth" class="qr-box"><img src="/assets/eth-erc20.jpg" alt="ETH ERC20 QR"></div></div>
-<a class="btn continue-btn" href="/submit">I Have Paid — Continue</a>
-</section></main>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vexora Payment</title>
+  <link rel="stylesheet" href="/styles.css">
+
+  <style>
+    .qr-box{
+      display:none;
+      margin-top:20px;
+      text-align:center;
+    }
+
+    .qr-box.show{
+      display:block;
+    }
+
+    .qr-box img{
+      width:100%;
+      max-width:360px;
+      height:auto;
+      display:block;
+      margin:auto;
+      border-radius:14px;
+      background:#fff;
+    }
+
+    .payment-method{
+      cursor:pointer;
+    }
+
+    .payment-method.active{
+      border-color:#8b5cff;
+      box-shadow:0 0 0 2px rgba(139,92,255,.25);
+    }
+
+    .continue-btn{
+      display:block;
+      text-align:center;
+      margin-top:25px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="logo">V<span>exora</span></div>
+</header>
+
+<main class="container">
+
+  <section class="hero-small">
+    <h1>Complete Your Payment</h1>
+    <p>Select a payment method and tap to show the QR.</p>
+  </section>
+
+  <section class="card">
+
+    <!-- UPI -->
+    <div class="card payment-method" onclick="showQR('upi',this)">
+      <h2>UPI / PhonePe</h2>
+      <p>Tap to show the UPI QR.</p>
+
+      <div id="upi" class="qr-box">
+        <img
+          src="/assets/upi-phonepe.jpg?v=2"
+          alt="UPI PhonePe QR"
+        >
+      </div>
+    </div>
+
+
+    <!-- USDT TRC20 -->
+    <div class="card payment-method" onclick="showQR('trc20',this)">
+      <h2>USDT — TRC20</h2>
+      <p>Tap to show the TRC20 QR.</p>
+
+      <div id="trc20" class="qr-box">
+        <img
+          src="/assets/usdt-trc20.jpg?v=2"
+          alt="USDT TRC20 QR"
+        >
+      </div>
+    </div>
+
+
+    <!-- USDT BEP20 -->
+    <div class="card payment-method" onclick="showQR('bep20',this)">
+      <h2>USDT — BEP20</h2>
+      <p>Tap to show the BEP20 QR.</p>
+
+      <div id="bep20" class="qr-box">
+        <img
+          src="/assets/usdt-bep20.jpg?v=2"
+          alt="USDT BEP20 QR"
+          onerror="this.parentElement.innerHTML='<p style=&quot;color:#ff8b8b&quot;>BEP20 QR image could not be loaded.</p>'"
+        >
+      </div>
+    </div>
+
+
+    <!-- ETH ERC20 -->
+    <div class="card payment-method" onclick="showQR('eth',this)">
+      <h2>ETH — ERC20</h2>
+      <p>Tap to show the ERC20 QR.</p>
+
+      <div id="eth" class="qr-box">
+        <img
+          src="/assets/eth-erc20.jpg?v=2"
+          alt="ETH ERC20 QR"
+        >
+      </div>
+    </div>
+
+
+    <a class="btn continue-btn" href="/submit">
+      I Have Paid — Continue
+    </a>
+
+  </section>
+
+</main>
+
+
 <script>
-function showQR(id,el){
- document.querySelectorAll(".qr-box").forEach(x=>x.classList.remove("show"));
- document.querySelectorAll(".payment-method").forEach(x=>x.classList.remove("active"));
- document.getElementById(id).classList.add("show");el.classList.add("active");
+function showQR(id, el) {
+
+  document
+    .querySelectorAll(".qr-box")
+    .forEach(function(box) {
+      box.classList.remove("show");
+    });
+
+  document
+    .querySelectorAll(".payment-method")
+    .forEach(function(card) {
+      card.classList.remove("active");
+    });
+
+  document
+    .getElementById(id)
+    .classList.add("show");
+
+  el.classList.add("active");
 }
-</script></body></html>
+</script>
+
+</body>
+</html>
