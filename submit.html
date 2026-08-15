@@ -1,0 +1,10 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Submit Payment Details</title><link rel="stylesheet" href="/styles.css"></head><body>
+<header class="topbar"><div class="logo">V<span>exora</span></div></header>
+<main class="container"><section class="hero-small"><h1>Submit Payment Details</h1><p>Payment complete karne ke baad apni details submit karein.</p></section>
+<section class="card"><form action="/submit-payment" method="POST" enctype="multipart/form-data">
+<label>UTR / Transaction ID</label><input type="text" name="transactionId" placeholder="Enter transaction/reference ID" required>
+<label>TradingView Username</label><input type="text" name="tradingview" placeholder="@username or username" required>
+<label>Telegram Username</label><input type="text" name="telegram" placeholder="@username" required>
+<label>Payment Proof / Screenshot</label><input type="file" name="proof" accept="image/*" required>
+<button class="btn" type="submit">Submit Payment Details</button>
+</form></section></main></body></html>
