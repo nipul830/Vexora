@@ -7,17 +7,33 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 
-// ===============================
+// ======================================================
+// SETTINGS
+// ======================================================
+
+// 15 minutes
+const REVIEW_TIME_MS = 15 * 60 * 1000;
+
+// IMPORTANT:
+// Yahan apna Telegram username/link baad me daal dena.
+// Example:
+// const MANUAL_REVIEW_TELEGRAM = "https://t.me/yourusername";
+
+const MANUAL_REVIEW_TELEGRAM =
+  "https://t.me/Jkhub_premium";
+
+
+// ======================================================
 // PARSE FORM DATA
-// ===============================
+// ======================================================
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 
-// ===============================
+// ======================================================
 // DIRECTORIES
-// ===============================
+// ======================================================
 
 const publicDir =
   path.join(__dirname, "public");
@@ -55,9 +71,9 @@ if (!fs.existsSync(paymentsFile)) {
 }
 
 
-// ===============================
+// ======================================================
 // PAYMENT HELPERS
-// ===============================
+// ======================================================
 
 function getPayments() {
 
@@ -101,9 +117,113 @@ function savePayments(payments) {
 }
 
 
-// ===============================
+// ======================================================
+// EXPIRY HELPERS
+// ======================================================
+
+function getCreatedTime(payment) {
+
+  const time =
+    new Date(
+      payment.createdAt
+    ).getTime();
+
+  if (Number.isNaN(time)) {
+    return Date.now();
+  }
+
+  return time;
+}
+
+
+function getExpiryTime(payment) {
+
+  return (
+    getCreatedTime(payment) +
+    REVIEW_TIME_MS
+  );
+}
+
+
+function getRemainingMs(payment) {
+
+  return Math.max(
+    0,
+    getExpiryTime(payment) -
+    Date.now()
+  );
+}
+
+
+function isExpired(payment) {
+
+  if (
+    payment.status !==
+    "Pending"
+  ) {
+    return false;
+  }
+
+  return (
+    getRemainingMs(payment) <= 0
+  );
+}
+
+
+/*
+  Automatically convert old Pending
+  submissions into Expired when
+  they cross the 15-minute limit.
+*/
+function updateExpiredPayments() {
+
+  const payments =
+    getPayments();
+
+  let changed = false;
+
+
+  payments.forEach(
+    (payment) => {
+
+      if (
+        payment.status ===
+        "Pending"
+      ) {
+
+        if (
+          getRemainingMs(payment) <=
+          0
+        ) {
+
+          payment.status =
+            "Expired";
+
+          payment.expiredAt =
+            new Date().toISOString();
+
+          changed = true;
+
+        }
+
+      }
+
+    }
+  );
+
+
+  if (changed) {
+    savePayments(payments);
+  }
+
+
+  return payments;
+}
+
+
+// ======================================================
 // FILE UPLOAD
-// ===============================
+// ======================================================
 
 const storage =
   multer.diskStorage({
@@ -134,7 +254,7 @@ const storage =
           "-" +
           Math.random()
             .toString(36)
-            .substring(2,8) +
+            .substring(2, 8) +
           ext;
 
 
@@ -161,9 +281,9 @@ const upload =
   });
 
 
-// ===============================
+// ======================================================
 // STATIC FILES
-// ===============================
+// ======================================================
 
 app.use(
   express.static(
@@ -172,11 +292,11 @@ app.use(
 );
 
 
-// ===============================
+// ======================================================
 // HOME
-// ===============================
+// ======================================================
 
-app.get("/", (req,res) => {
+app.get("/", (req, res) => {
 
   res.sendFile(
     path.join(
@@ -188,11 +308,11 @@ app.get("/", (req,res) => {
 });
 
 
-// ===============================
+// ======================================================
 // PLANS
-// ===============================
+// ======================================================
 
-app.get("/plans", (req,res) => {
+app.get("/plans", (req, res) => {
 
   res.sendFile(
     path.join(
@@ -204,11 +324,11 @@ app.get("/plans", (req,res) => {
 });
 
 
-// ===============================
+// ======================================================
 // PAYMENT
-// ===============================
+// ======================================================
 
-app.get("/payment", (req,res) => {
+app.get("/payment", (req, res) => {
 
   res.sendFile(
     path.join(
@@ -220,11 +340,11 @@ app.get("/payment", (req,res) => {
 });
 
 
-// ===============================
+// ======================================================
 // SUBMIT
-// ===============================
+// ======================================================
 
-app.get("/submit", (req,res) => {
+app.get("/submit", (req, res) => {
 
   res.sendFile(
     path.join(
@@ -236,14 +356,17 @@ app.get("/submit", (req,res) => {
 });
 
 
-// ===============================
+// ======================================================
 // SUBMIT PAYMENT
-// ===============================
+// ======================================================
 
 app.post(
   "/submit-payment",
   upload.single("proof"),
-  (req,res) => {
+  (req, res) => {
+
+    const createdAt =
+      new Date().toISOString();
 
 
     const payment = {
@@ -253,7 +376,7 @@ app.post(
         "-" +
         Math.random()
           .toString(36)
-          .substring(2,8),
+          .substring(2, 8),
 
 
       plan:
@@ -288,12 +411,18 @@ app.post(
 
 
       createdAt:
-        new Date().toISOString()
+        createdAt,
+
+
+      expiresAt:
+        new Date(
+          new Date(createdAt).getTime() +
+          REVIEW_TIME_MS
+        ).toISOString()
 
     };
 
 
-    // Save
     const payments =
       getPayments();
 
@@ -349,9 +478,9 @@ app.post(
     );
 
 
-    // ===========================
+    // ==================================================
     // SUCCESS PAGE
-    // ===========================
+    // ==================================================
 
     res.send(`
 
@@ -519,13 +648,110 @@ h1 {
 
 .message {
 
-  margin: 20px 0 28px;
+  margin: 20px 0 15px;
 
   color: #a9b8dc;
 
   font-size: 16px;
 
   line-height: 1.6;
+
+}
+
+
+.timer-label {
+
+  color: #9eacd0;
+
+  font-size: 13px;
+
+  margin-top: 18px;
+
+}
+
+
+.timer {
+
+  margin-top: 6px;
+
+  font-size: 32px;
+
+  font-weight: 800;
+
+  color: #ffffff;
+
+  letter-spacing: 1px;
+
+}
+
+
+.timer.expired {
+
+  color: #ff7d87;
+
+}
+
+
+.manual-review {
+
+  display: none;
+
+  margin-top: 18px;
+
+  padding: 16px;
+
+  border-radius: 15px;
+
+  background: #27181a;
+
+  border:
+    1px solid
+    rgba(255,100,110,.30);
+
+}
+
+
+.manual-review h2 {
+
+  margin: 0 0 8px;
+
+  font-size: 18px;
+
+  color: #ff9aa3;
+
+}
+
+
+.manual-review p {
+
+  margin: 0 0 14px;
+
+  color: #c5cad8;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+
+}
+
+
+.telegram-btn {
+
+  display: block;
+
+  width: 100%;
+
+  padding: 14px;
+
+  border-radius: 12px;
+
+  text-decoration: none;
+
+  color: white;
+
+  font-weight: 800;
+
+  background: #168dcc;
 
 }
 
@@ -539,6 +765,8 @@ h1 {
   border-radius: 14px;
 
   padding: 16px 20px;
+
+  margin-top: 22px;
 
   font-size: 18px;
 
@@ -563,6 +791,40 @@ h1 {
   transform: scale(.98);
 
 }
+
+
+.status-message {
+
+  display: none;
+
+  margin-top: 18px;
+
+  padding: 14px;
+
+  border-radius: 13px;
+
+  font-weight: 700;
+
+}
+
+
+.status-approved {
+
+  background: #103923;
+
+  color: #65e99a;
+
+}
+
+
+.status-rejected {
+
+  background: #42191d;
+
+  color: #ff7d87;
+
+}
+
 
 </style>
 
@@ -618,7 +880,55 @@ h1 {
   </p>
 
 
+  <div class="timer-label">
+    Verification time remaining
+  </div>
+
+
+  <div
+    id="timer"
+    class="timer"
+  >
+    15:00
+  </div>
+
+
+  <div
+    id="statusMessage"
+    class="status-message"
+  >
+  </div>
+
+
+  <div
+    id="manualReview"
+    class="manual-review"
+  >
+
+    <h2>
+      Manual Review Required
+    </h2>
+
+    <p>
+      Verification time has expired.
+      Please contact us on Telegram
+      for manual assistance.
+    </p>
+
+    <a
+      class="telegram-btn"
+      href="${MANUAL_REVIEW_TELEGRAM}"
+      target="_blank"
+      rel="noopener"
+    >
+      Contact on Telegram
+    </a>
+
+  </div>
+
+
   <button
+    id="okBtn"
     class="ok-btn"
     onclick="window.location.href='/'"
   >
@@ -627,6 +937,257 @@ h1 {
 
 
 </div>
+
+
+<script>
+
+const paymentId =
+  ${JSON.stringify(payment.id)};
+
+const expiresAt =
+  ${JSON.stringify(payment.expiresAt)};
+
+
+const timer =
+  document.getElementById("timer");
+
+const manualReview =
+  document.getElementById("manualReview");
+
+const statusMessage =
+  document.getElementById("statusMessage");
+
+
+let finished =
+  false;
+
+
+function formatTime(ms) {
+
+  const totalSeconds =
+    Math.max(
+      0,
+      Math.ceil(ms / 1000)
+    );
+
+
+  const minutes =
+    Math.floor(
+      totalSeconds / 60
+    );
+
+
+  const seconds =
+    totalSeconds % 60;
+
+
+  return (
+    String(minutes).padStart(2,"0") +
+    ":" +
+    String(seconds).padStart(2,"0")
+  );
+
+}
+
+
+function showExpired() {
+
+  timer.textContent =
+    "00:00";
+
+  timer.classList.add(
+    "expired"
+  );
+
+  manualReview.style.display =
+    "block";
+
+}
+
+
+function showStatus(status) {
+
+  if (
+    status ===
+    "Approved"
+  ) {
+
+    finished = true;
+
+    statusMessage.textContent =
+      "✓ Payment Approved";
+
+    statusMessage.className =
+      "status-message status-approved";
+
+    statusMessage.style.display =
+      "block";
+
+    manualReview.style.display =
+      "none";
+
+    timer.style.display =
+      "none";
+
+    return;
+
+  }
+
+
+  if (
+    status ===
+    "Rejected"
+  ) {
+
+    finished = true;
+
+    statusMessage.textContent =
+      "✕ Payment Rejected";
+
+    statusMessage.className =
+      "status-message status-rejected";
+
+    statusMessage.style.display =
+      "block";
+
+    manualReview.style.display =
+      "none";
+
+    timer.style.display =
+      "none";
+
+    return;
+
+  }
+
+
+  if (
+    status ===
+    "Expired"
+  ) {
+
+    finished = true;
+
+    showExpired();
+
+  }
+
+}
+
+
+async function checkStatus() {
+
+  if (finished) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/payment-status/" +
+        encodeURIComponent(
+          paymentId
+        ),
+        {
+          cache: "no-store"
+        }
+      );
+
+
+    if (!response.ok) {
+      return;
+    }
+
+
+    const data =
+      await response.json();
+
+
+    showStatus(
+      data.status
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Status check failed:",
+      error
+    );
+
+  }
+
+}
+
+
+function updateTimer() {
+
+  if (finished) {
+    return;
+  }
+
+
+  const remaining =
+    new Date(
+      expiresAt
+    ).getTime() -
+    Date.now();
+
+
+  if (remaining <= 0) {
+
+    showExpired();
+
+    checkStatus();
+
+    return;
+
+  }
+
+
+  timer.textContent =
+    formatTime(
+      remaining
+    );
+
+}
+
+
+updateTimer();
+
+
+const timerInterval =
+  setInterval(
+    updateTimer,
+    1000
+  );
+
+
+const statusInterval =
+  setInterval(
+    checkStatus,
+    3000
+  );
+
+
+window.addEventListener(
+  "beforeunload",
+  function() {
+
+    clearInterval(
+      timerInterval
+    );
+
+    clearInterval(
+      statusInterval
+    );
+
+  }
+);
+
+</script>
 
 
 </body>
@@ -640,134 +1201,260 @@ h1 {
 
 
 // ======================================================
+// PAYMENT STATUS API
+// ======================================================
+
+app.get(
+  "/payment-status/:id",
+  (req, res) => {
+
+    const payments =
+      updateExpiredPayments();
+
+
+    const payment =
+      payments.find(
+        p =>
+          p.id ===
+          req.params.id
+      );
+
+
+    if (!payment) {
+
+      return res
+        .status(404)
+        .json({
+          status: "Not Found"
+        });
+
+    }
+
+
+    res.json({
+
+      status:
+        payment.status,
+
+      remainingMs:
+        getRemainingMs(
+          payment
+        ),
+
+      expiresAt:
+        payment.expiresAt
+
+    });
+
+  }
+);
+
+
+// ======================================================
 // ADMIN DASHBOARD
 // ======================================================
 
-app.get("/admin", (req,res) => {
+app.get(
+  "/admin",
+  (req, res) => {
 
-  const payments =
-    getPayments();
-
-
-  const rows =
-    payments.map(
-      (payment) => {
+    const payments =
+      updateExpiredPayments();
 
 
-        const date =
-          new Date(
-            payment.createdAt
-          ).toLocaleString();
+    const rows =
+      payments.map(
+        (payment) => {
 
 
-        let statusClass =
-          "pending";
+          const date =
+            new Date(
+              payment.createdAt
+            ).toLocaleString();
 
 
-        if (
-          payment.status ===
-          "Approved"
-        ) {
-
-          statusClass =
-            "approved";
-
-        }
+          let statusClass =
+            "pending";
 
 
-        if (
-          payment.status ===
-          "Rejected"
-        ) {
+          if (
+            payment.status ===
+            "Approved"
+          ) {
 
-          statusClass =
-            "rejected";
+            statusClass =
+              "approved";
 
-        }
-
-
-        let actionHTML = "";
+          }
 
 
-        if (
-          payment.status ===
-          "Pending"
-        ) {
+          if (
+            payment.status ===
+            "Rejected"
+          ) {
 
-          actionHTML = `
+            statusClass =
+              "rejected";
 
-            <div class="actions">
+          }
 
-              <form
-                method="POST"
-                action="/admin/payment/${payment.id}/approve"
-              >
 
-                <button
-                  class="approve"
-                  type="submit"
+          if (
+            payment.status ===
+            "Expired"
+          ) {
+
+            statusClass =
+              "expired";
+
+          }
+
+
+          let actionHTML =
+            "";
+
+
+          if (
+            payment.status ===
+            "Pending"
+          ) {
+
+            const remaining =
+              getRemainingMs(
+                payment
+              );
+
+
+            actionHTML = `
+
+              <div class="admin-timer">
+
+                <span
+                  class="countdown"
+                  data-expiry="${escapeHTML(
+                    payment.expiresAt
+                  )}"
                 >
-                  ✓ Approve
-                </button>
+                  ${formatAdminTime(
+                    remaining
+                  )}
+                </span>
 
-              </form>
+              </div>
 
 
-              <form
-                method="POST"
-                action="/admin/payment/${payment.id}/reject"
-              >
+              <div class="actions">
 
-                <button
-                  class="reject"
-                  type="submit"
+                <form
+                  method="POST"
+                  action="/admin/payment/${payment.id}/approve"
                 >
-                  ✕ Reject
-                </button>
 
-              </form>
+                  <button
+                    class="approve"
+                    type="submit"
+                  >
+                    ✓ Approve
+                  </button>
 
-            </div>
-
-          `;
-
-        } else {
-
-          actionHTML = `
-            <span class="action-done">
-              Action completed
-            </span>
-          `;
-
-        }
+                </form>
 
 
-        const proofHTML =
-          payment.proof
+                <form
+                  method="POST"
+                  action="/admin/payment/${payment.id}/reject"
+                >
 
-          ? `
+                  <button
+                    class="reject"
+                    type="submit"
+                  >
+                    ✕ Reject
+                  </button>
 
-            <a
-              class="proof-btn"
-              href="${payment.proof}"
-              target="_blank"
-              rel="noopener"
-            >
-              View Proof
-            </a>
+                </form>
 
-          `
+              </div>
 
-          : `
+            `;
 
-            <span class="no-proof">
-              No Proof
-            </span>
+          }
 
-          `;
+          else if (
+            payment.status ===
+            "Expired"
+          ) {
+
+            actionHTML = `
+
+              <div class="manual-admin">
+
+                <strong>
+                  Manual Review
+                </strong>
+
+                <a
+                  href="${MANUAL_REVIEW_TELEGRAM}"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Telegram
+                </a>
+
+              </div>
+
+            `;
+
+          }
+
+          else {
+
+            actionHTML = `
+
+              <span class="action-done">
+
+                ${
+                  payment.status ===
+                  "Approved"
+
+                  ? "✓ Approved"
+
+                  : "✕ Rejected"
+                }
+
+              </span>
+
+            `;
+
+          }
 
 
-        return `
+          const proofHTML =
+            payment.proof
+
+            ? `
+
+              <a
+                class="proof-btn"
+                href="${payment.proof}"
+                target="_blank"
+                rel="noopener"
+              >
+                View Proof
+              </a>
+
+            `
+
+            : `
+
+              <span class="no-proof">
+                No Proof
+              </span>
+
+            `;
+
+
+          return `
 
 <tr>
 
@@ -847,42 +1534,50 @@ app.get("/admin", (req,res) => {
 
 </tr>
 
-        `;
+          `;
 
-      }
-    )
-    .join("");
-
-
-  const total =
-    payments.length;
+        }
+      )
+      .join("");
 
 
-  const pending =
-    payments.filter(
-      p =>
-        p.status ===
-        "Pending"
-    ).length;
+    const total =
+      payments.length;
 
 
-  const approved =
-    payments.filter(
-      p =>
-        p.status ===
-        "Approved"
-    ).length;
+    const pending =
+      payments.filter(
+        p =>
+          p.status ===
+          "Pending"
+      ).length;
 
 
-  const rejected =
-    payments.filter(
-      p =>
-        p.status ===
-        "Rejected"
-    ).length;
+    const approved =
+      payments.filter(
+        p =>
+          p.status ===
+          "Approved"
+      ).length;
 
 
-  res.send(`
+    const rejected =
+      payments.filter(
+        p =>
+          p.status ===
+          "Rejected"
+      ).length;
+
+
+    const expired =
+      payments.filter(
+        p =>
+          p.status ===
+          "Expired"
+      ).length;
+
+
+    res.send(`
 
 <!doctype html>
 
@@ -1074,7 +1769,7 @@ table {
 
   border-collapse: collapse;
 
-  min-width: 1250px;
+  min-width: 1350px;
 
 }
 
@@ -1169,6 +1864,45 @@ tr:last-child td {
 }
 
 
+.expired {
+
+  background: #422417;
+
+  color: #ffad72;
+
+}
+
+
+.admin-timer {
+
+  margin-bottom: 9px;
+
+}
+
+
+.countdown {
+
+  display: inline-block;
+
+  padding: 6px 10px;
+
+  border-radius: 8px;
+
+  background: #071126;
+
+  border:
+    1px solid
+    rgba(139,92,255,.35);
+
+  color: #a879ff;
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+}
+
+
 .actions {
 
   display: flex;
@@ -1223,6 +1957,49 @@ tr:last-child td {
   font-size: 13px;
 
   white-space: nowrap;
+
+}
+
+
+.manual-admin {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+
+}
+
+
+.manual-admin strong {
+
+  color: #ffad72;
+
+  font-size: 13px;
+
+}
+
+
+.manual-admin a {
+
+  display: inline-block;
+
+  padding: 8px 10px;
+
+  border-radius: 8px;
+
+  background: #168dcc;
+
+  color: #fff;
+
+  text-decoration: none;
+
+  font-size: 12px;
+
+  font-weight: 700;
 
 }
 
@@ -1392,6 +2169,19 @@ tr:last-child td {
   </div>
 
 
+  <div class="stat">
+
+    <span class="stat-number">
+      ${expired}
+    </span>
+
+    <span class="stat-label">
+      Expired
+    </span>
+
+  </div>
+
+
 </div>
 
 
@@ -1458,6 +2248,102 @@ ${
 
 </main>
 
+
+<script>
+
+/*
+  Live admin countdown.
+  When timer reaches 00:00,
+  reload the dashboard so the
+  submission becomes Expired.
+*/
+
+function updateAdminTimers() {
+
+  const elements =
+    document.querySelectorAll(
+      ".countdown"
+    );
+
+
+  let shouldReload =
+    false;
+
+
+  elements.forEach(
+    function(element) {
+
+      const expiry =
+        new Date(
+          element.dataset.expiry
+        ).getTime();
+
+
+      const remaining =
+        Math.max(
+          0,
+          expiry -
+          Date.now()
+        );
+
+
+      const totalSeconds =
+        Math.ceil(
+          remaining / 1000
+        );
+
+
+      const minutes =
+        Math.floor(
+          totalSeconds / 60
+        );
+
+
+      const seconds =
+        totalSeconds % 60;
+
+
+      element.textContent =
+        String(minutes)
+          .padStart(2,"0") +
+        ":" +
+        String(seconds)
+          .padStart(2,"0");
+
+
+      if (
+        remaining <= 0
+      ) {
+
+        shouldReload =
+          true;
+
+      }
+
+    }
+  );
+
+
+  if (shouldReload) {
+
+    window.location.reload();
+
+  }
+
+}
+
+
+updateAdminTimers();
+
+
+setInterval(
+  updateAdminTimers,
+  1000
+);
+
+</script>
+
+
 </body>
 
 </html>
@@ -1473,10 +2359,10 @@ ${
 
 app.post(
   "/admin/payment/:id/approve",
-  (req,res) => {
+  (req, res) => {
 
     const payments =
-      getPayments();
+      updateExpiredPayments();
 
 
     const payment =
@@ -1489,12 +2375,26 @@ app.post(
 
     if (payment) {
 
-      payment.status =
-        "Approved";
+      // Do not allow approval
+      // after the 15-minute window.
 
-      savePayments(
-        payments
-      );
+      if (
+        payment.status ===
+        "Pending" &&
+        !isExpired(payment)
+      ) {
+
+        payment.status =
+          "Approved";
+
+        payment.approvedAt =
+          new Date().toISOString();
+
+        savePayments(
+          payments
+        );
+
+      }
 
     }
 
@@ -1513,10 +2413,10 @@ app.post(
 
 app.post(
   "/admin/payment/:id/reject",
-  (req,res) => {
+  (req, res) => {
 
     const payments =
-      getPayments();
+      updateExpiredPayments();
 
 
     const payment =
@@ -1529,12 +2429,26 @@ app.post(
 
     if (payment) {
 
-      payment.status =
-        "Rejected";
+      // Do not allow rejection
+      // after the 15-minute window.
 
-      savePayments(
-        payments
-      );
+      if (
+        payment.status ===
+        "Pending" &&
+        !isExpired(payment)
+      ) {
+
+        payment.status =
+          "Rejected";
+
+        payment.rejectedAt =
+          new Date().toISOString();
+
+        savePayments(
+          payments
+        );
+
+      }
 
     }
 
@@ -1545,6 +2459,44 @@ app.post(
 
   }
 );
+
+
+// ======================================================
+// ADMIN TIMER FORMAT
+// ======================================================
+
+function formatAdminTime(
+  remainingMs
+) {
+
+  const totalSeconds =
+    Math.max(
+      0,
+      Math.ceil(
+        remainingMs / 1000
+      )
+    );
+
+
+  const minutes =
+    Math.floor(
+      totalSeconds / 60
+    );
+
+
+  const seconds =
+    totalSeconds % 60;
+
+
+  return (
+    String(minutes)
+      .padStart(2,"0") +
+    ":" +
+    String(seconds)
+      .padStart(2,"0")
+  );
+
+}
 
 
 // ======================================================
@@ -1593,9 +2545,9 @@ function escapeHTML(value) {
 }
 
 
-// ===============================
+// ======================================================
 // START SERVER
-// ===============================
+// ======================================================
 
 app.listen(
   PORT,
