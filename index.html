@@ -3,133 +3,91 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vexora — Market Tools & Indicator</title>
+  <title>Vexora — Market Tools</title>
 
   <style>
-    :root{
-      --bg:#070d1d;
-      --bg2:#0b1328;
-      --card:#111c34;
-      --line:#263757;
-      --text:#f4f7ff;
-      --muted:#9eaccb;
-      --purple:#8b5cff;
-      --blue:#147cff;
-      --green:#35d48a;
-    }
-
-    *{
-      box-sizing:border-box;
-    }
-
-    html{
-      scroll-behavior:smooth;
-    }
-
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
     body{
       margin:0;
-      background:
-        radial-gradient(circle at 50% 0%,#17254d 0%,transparent 42%),
-        var(--bg);
-      color:var(--text);
       font-family:Arial,Helvetica,sans-serif;
+      color:#f5f7ff;
+      background:#070d1d;
     }
-
-    a{
-      text-decoration:none;
-    }
+    a{text-decoration:none}
 
     .topbar{
-      height:100px;
+      height:90px;
       display:flex;
       align-items:center;
-      padding:0 35px;
-      border-bottom:1px solid #1c2944;
+      padding:0 28px;
       background:#080d1b;
-      position:sticky;
-      top:0;
-      z-index:20;
+      border-bottom:1px solid #202c49;
     }
 
     .logo{
-      font-size:40px;
+      font-size:36px;
       font-weight:800;
-      letter-spacing:-2px;
     }
 
-    .logo span{
-      color:#8b5cff;
-    }
+    .logo span{color:#8b5cff}
 
     .container{
       max-width:1000px;
       margin:auto;
-      padding:35px 22px 70px;
+      padding:25px 20px 60px;
     }
 
     .hero{
       text-align:center;
-      padding:50px 10px 35px;
+      padding:55px 10px 35px;
     }
 
     .badge{
       display:inline-block;
-      padding:10px 18px;
-      border:1px solid #4d4a82;
+      padding:9px 16px;
+      border:1px solid #4b4c80;
       border-radius:30px;
-      color:#c8b8ff;
-      background:#111329;
+      color:#cbbcff;
+      font-size:13px;
       font-weight:700;
-      font-size:14px;
-      margin-bottom:25px;
     }
 
-    .hero h1{
-      font-size:64px;
-      line-height:1.03;
-      margin:0 auto 25px;
-      max-width:850px;
-      letter-spacing:-3px;
+    h1{
+      font-size:60px;
+      line-height:1.05;
+      margin:22px 0;
     }
 
     .gradient{
-      background:linear-gradient(90deg,#a15cff,#5d9dff);
+      background:linear-gradient(90deg,#a65cff,#5c9dff);
       -webkit-background-clip:text;
-      background-clip:text;
       color:transparent;
     }
 
-    .hero p{
-      color:var(--muted);
-      font-size:21px;
-      line-height:1.7;
+    .lead{
       max-width:800px;
-      margin:0 auto;
+      margin:auto;
+      color:#9eaccb;
+      font-size:19px;
+      line-height:1.7;
     }
 
     .buttons{
       display:flex;
       justify-content:center;
-      gap:15px;
+      gap:14px;
+      margin-top:28px;
       flex-wrap:wrap;
-      margin-top:32px;
     }
 
     .btn{
       display:inline-block;
-      border:0;
-      border-radius:15px;
-      padding:17px 28px;
-      background:linear-gradient(90deg,#8b35ff,#147cff);
-      color:#fff;
+      padding:16px 25px;
+      border-radius:14px;
+      color:white;
       font-weight:800;
-      font-size:17px;
-      cursor:pointer;
-      transition:.2s;
-    }
-
-    .btn:hover{
-      transform:translateY(-2px);
+      background:linear-gradient(90deg,#8b35ff,#147cff);
     }
 
     .btn.secondary{
@@ -138,89 +96,61 @@
     }
 
     .section{
-      margin-top:45px;
-    }
-
-    .section-title{
-      text-align:center;
-      font-size:38px;
-      margin:0 0 12px;
-    }
-
-    .section-subtitle{
-      text-align:center;
-      color:var(--muted);
-      font-size:18px;
-      line-height:1.6;
-      max-width:760px;
-      margin:0 auto 25px;
+      margin-top:40px;
     }
 
     .card{
-      background:linear-gradient(145deg,#111c34,#0c152b);
-      border:1px solid var(--line);
-      border-radius:24px;
-      padding:30px;
-      margin-bottom:20px;
-      box-shadow:0 12px 40px #00000022;
+      background:#101a31;
+      border:1px solid #29395b;
+      border-radius:22px;
+      padding:27px;
+      margin-bottom:18px;
     }
 
     .card h2{
-      margin:0 0 14px;
-      font-size:28px;
-    }
-
-    .card h3{
-      font-size:21px;
-      margin:0 0 10px;
+      margin-top:0;
+      font-size:30px;
     }
 
     .card p{
-      color:var(--muted);
-      font-size:18px;
+      color:#9eaccb;
+      font-size:17px;
       line-height:1.7;
-      margin:8px 0;
     }
 
-    .indicator-title{
-      color:#a875ff;
-    }
-
-    .highlight{
-      color:#fff;
-      font-weight:800;
+    .indicator{
+      border-color:#394c75;
     }
 
     .accuracy{
       margin-top:20px;
-      padding:20px;
-      border-radius:18px;
-      border:1px solid #355b82;
-      background:#0b1930;
+      padding:18px;
+      background:#0b1730;
+      border:1px solid #31577b;
+      border-radius:16px;
     }
 
     .accuracy strong{
-      color:#7ee7b4;
+      color:#8fe8ba;
       font-size:24px;
     }
 
     .features{
       display:grid;
       grid-template-columns:repeat(3,1fr);
-      gap:18px;
-      margin-top:25px;
+      gap:17px;
     }
 
     .feature{
       background:#0d172d;
-      border:1px solid var(--line);
-      border-radius:20px;
-      padding:24px;
+      border:1px solid #29395b;
+      border-radius:19px;
+      padding:22px;
     }
 
     .feature-icon{
       font-size:30px;
-      margin-bottom:12px;
+      margin-bottom:10px;
     }
 
     .feature h3{
@@ -229,155 +159,37 @@
 
     .feature p{
       font-size:15px;
+      margin:0;
     }
 
-    .membership{
-      border-color:#31567d;
-    }
-
-    .membership-list{
-      padding:0;
-      margin:20px 0;
-      list-style:none;
-    }
-
-    .membership-list li{
-      color:#d8e1f5;
-      padding:10px 0;
-      border-bottom:1px solid #22324f;
-      font-size:17px;
-    }
-
-    .membership-list li:last-child{
-      border-bottom:0;
-    }
-
-    .plans{
+    .support{
       display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:16px;
-      margin-top:25px;
+      grid-template-columns:repeat(3,1fr);
+      gap:15px;
     }
 
-    .plan{
-      background:#0e1830;
-      border:1px solid var(--line);
-      border-radius:20px;
-      padding:22px;
-      text-align:center;
-    }
-
-    .plan.free{
-      border-color:#27875e;
-    }
-
-    .plan h3{
-      margin:0 0 12px;
-      font-size:22px;
-    }
-
-    .plan p{
-      font-size:15px;
-      min-height:70px;
-    }
-
-    .plan .btn{
-      width:100%;
-      padding:14px 10px;
-      font-size:15px;
-    }
-
-    .cta{
-      text-align:center;
-      margin-top:50px;
-      padding:40px 25px;
-      border-radius:26px;
-      background:linear-gradient(135deg,#15153c,#0c1934);
-      border:1px solid #39456c;
-    }
-
-    .cta h2{
-      font-size:34px;
-      margin:0 0 12px;
-    }
-
-    .cta p{
-      color:var(--muted);
-      font-size:18px;
-      line-height:1.6;
+    .support a{
+      color:white;
     }
 
     footer{
       text-align:center;
-      color:#7887a7;
-      padding:35px 20px;
-      border-top:1px solid #1c2944;
-      margin-top:30px;
+      padding:30px 15px;
+      color:#71809e;
+      border-top:1px solid #202c49;
     }
 
-    @media(max-width:800px){
-
-      .hero h1{
-        font-size:48px;
-      }
-
-      .features{
-        grid-template-columns:1fr;
-      }
-
-      .plans{
-        grid-template-columns:1fr 1fr;
-      }
+    @media(max-width:750px){
+      h1{font-size:44px}
+      .features,.support{grid-template-columns:1fr}
     }
 
-    @media(max-width:600px){
-
-      .topbar{
-        height:85px;
-        padding:0 20px;
-      }
-
-      .logo{
-        font-size:34px;
-      }
-
-      .container{
-        padding:20px 18px 55px;
-      }
-
-      .hero{
-        padding:35px 5px 25px;
-      }
-
-      .hero h1{
-        font-size:43px;
-        letter-spacing:-2px;
-      }
-
-      .hero p{
-        font-size:18px;
-      }
-
-      .section-title{
-        font-size:31px;
-      }
-
-      .card{
-        padding:23px;
-      }
-
-      .plans{
-        grid-template-columns:1fr;
-      }
-
-      .buttons{
-        flex-direction:column;
-      }
-
-      .buttons .btn{
-        width:100%;
-        text-align:center;
-      }
+    @media(max-width:500px){
+      .topbar{height:78px;padding:0 18px}
+      .logo{font-size:31px}
+      h1{font-size:39px}
+      .hero{padding-top:35px}
+      .btn{width:100%;text-align:center}
     }
   </style>
 </head>
@@ -387,7 +199,6 @@
 <header class="topbar">
   <div class="logo">V<span>exora</span></div>
 </header>
-
 
 <main class="container">
 
@@ -403,23 +214,26 @@
       <span class="gradient">one place.</span>
     </h1>
 
-    <p>
-      Vexora provides a clean access portal for market tools
-      and premium features across Indian markets, Forex,
-      Crypto, Gold, Commodities and Options charts.
+    <p class="lead">
+      Vexora provides a clean market-analysis experience
+      across Indian markets, Forex, Crypto, Gold,
+      Commodities and Options.
     </p>
 
     <div class="buttons">
+
       <a class="btn" href="/plans">
         Get Started
       </a>
 
       <a
         class="btn secondary"
-        href="https://wa.me/916371406885?text=Hi%20Vexora%2C%20I%20need%20customer%20support."
+        href="https://wa.me/916371406885"
+        target="_blank"
       >
         Customer Care
       </a>
+
     </div>
 
   </section>
@@ -428,40 +242,35 @@
   <!-- INDICATOR -->
   <section class="section">
 
-    <div class="card">
+    <div class="card indicator">
 
       <h2>
-        Vexora <span class="indicator-title">Indicator</span>
+        Vexora <span class="gradient">Indicator</span>
       </h2>
 
       <p>
-        <span class="highlight">Vexora Indicator</span>
-        is a smart market-analysis tool designed to identify
-        high-probability <span class="highlight">BUY & SELL signals</span>
+        <strong>Vexora Indicator</strong> is a smart
+        market-analysis tool designed to identify
+        high-probability <strong>BUY & SELL signals</strong>
         across multiple market conditions.
       </p>
 
       <p>
         It combines
-        <span class="highlight">
-          price action, momentum, trend & volatility analysis
-        </span>
+        <strong>price action, momentum, trend & volatility analysis</strong>
         to generate clear and easy-to-understand signals.
       </p>
 
       <p>
-        The indicator is designed to help traders identify
-        potential market opportunities faster and make more
-        informed trading decisions.
+        Vexora helps traders analyse market opportunities
+        faster and make more informed trading decisions.
       </p>
 
       <div class="accuracy">
         <strong>Up to 90% signal accuracy</strong>
-
         <p>
-          In suitable market conditions, Vexora is designed
-          to provide high-confidence signals and help traders
-          improve their market analysis.
+          Designed to provide high-confidence signals
+          in suitable market conditions.
         </p>
       </div>
 
@@ -473,69 +282,61 @@
   <!-- FEATURES -->
   <section class="section">
 
-    <h2 class="section-title">
-      Powerful Market Features
-    </h2>
+    <div class="card">
 
-    <p class="section-subtitle">
-      Simple tools designed to make market analysis faster,
-      cleaner and easier to understand.
-    </p>
+      <h2>What You Get</h2>
 
-    <div class="features">
+      <div class="features">
 
-      <div class="feature">
-        <div class="feature-icon">📈</div>
-        <h3>BUY & SELL Signals</h3>
-        <p>
-          Clear signals designed to highlight potential
-          market opportunities.
-        </p>
-      </div>
+        <div class="feature">
+          <div class="feature-icon">📈</div>
+          <h3>BUY & SELL Signals</h3>
+          <p>
+            Clear signals for potential market opportunities.
+          </p>
+        </div>
 
-      <div class="feature">
-        <div class="feature-icon">⚡</div>
-        <h3>Fast Analysis</h3>
-        <p>
-          Combine trend, momentum and price action analysis
-          in one simple workflow.
-        </p>
-      </div>
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <h3>Fast Analysis</h3>
+          <p>
+            Trend, momentum and price-action analysis.
+          </p>
+        </div>
 
-      <div class="feature">
-        <div class="feature-icon">🎯</div>
-        <h3>High-Probability Setups</h3>
-        <p>
-          Focus on stronger market conditions and avoid
-          unnecessary chart noise.
-        </p>
-      </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <h3>Multiple Markets</h3>
+          <p>
+            Indian Market, Forex, Crypto, Gold,
+            Commodities and Options.
+          </p>
+        </div>
 
-      <div class="feature">
-        <div class="feature-icon">📊</div>
-        <h3>Multiple Markets</h3>
-        <p>
-          Built for Indian markets, Forex, Crypto, Gold,
-          Commodities and Options.
-        </p>
-      </div>
+        <div class="feature">
+          <div class="feature-icon">🎯</div>
+          <h3>High Probability</h3>
+          <p>
+            Focus on stronger market conditions.
+          </p>
+        </div>
 
-      <div class="feature">
-        <div class="feature-icon">🔎</div>
-        <h3>Market Analysis</h3>
-        <p>
-          Understand trend and momentum before making
-          trading decisions.
-        </p>
-      </div>
+        <div class="feature">
+          <div class="feature-icon">🔎</div>
+          <h3>Market Analysis</h3>
+          <p>
+            Understand trend and momentum clearly.
+          </p>
+        </div>
 
-      <div class="feature">
-        <div class="feature-icon">🚀</div>
-        <h3>Easy to Use</h3>
-        <p>
-          Clean interface with simple access to premium
-          market tools.
-        </p>
+        <div class="feature">
+          <div class="feature-icon">🚀</div>
+          <h3>Easy to Use</h3>
+          <p>
+            Simple interface for quick market analysis.
+          </p>
+        </div>
+
       </div>
 
     </div>
@@ -546,34 +347,22 @@
   <!-- MEMBERSHIP -->
   <section class="section">
 
-    <div class="card membership">
+    <div class="card">
 
       <h2>Membership Access</h2>
 
       <p>
-        Choose a plan, complete payment, then submit your
-        transaction details and payment proof for manual
-        verification.
+        Choose a plan and get access to the Vexora
+        premium market-analysis experience.
       </p>
 
-      <ul class="membership-list">
-
-        <li>✓ Premium Vexora Indicator access</li>
-
-        <li>✓ Market analysis tools</li>
-
-        <li>✓ BUY & SELL signal system</li>
-
-        <li>✓ TradingView-based workflow</li>
-
-        <li>✓ Manual payment verification</li>
-
-        <li>✓ Telegram support</li>
-
-      </ul>
+      <p>
+        TradingView username is collected for
+        invite/access processing.
+      </p>
 
       <a class="btn" href="/plans">
-        View Membership Plans
+        View Plans
       </a>
 
     </div>
@@ -581,82 +370,40 @@
   </section>
 
 
-  <!-- PLANS -->
+  <!-- CUSTOMER CARE -->
   <section class="section">
 
-    <h2 class="section-title">
-      Choose Your Plan
-    </h2>
+    <div class="card">
 
-    <p class="section-subtitle">
-      Start with free access or choose a premium membership.
-    </p>
+      <h2>Customer Care</h2>
 
-    <div class="plans">
-
-      <!-- 1 DAY FREE -->
-      <div class="plan free">
-
-        <h3>1 Day Free</h3>
-
-        <p>
-          Try Vexora for one day.
-          Contact us on WhatsApp to activate your free access.
-        </p>
+      <div class="support">
 
         <a
-          class="btn"
-          href="https://wa.me/916371406885?text=Hi%20Vexora%2C%20I%20want%20the%201%20Day%20Free%20plan."
+          class="feature"
+          href="https://wa.me/916371406885"
+          target="_blank"
         >
-          Get Free Access
+          <h3>WhatsApp</h3>
+          <p>+91 63714 06885</p>
         </a>
 
-      </div>
-
-
-      <!-- 7 DAYS -->
-      <div class="plan">
-
-        <h3>7 Days</h3>
-
-        <p>
-          Premium access for 7 days.
-        </p>
-
-        <a class="btn" href="/payment?plan=7days">
-          Choose Plan
+        <a
+          class="feature"
+          href="https://t.me/Jkhub_premium"
+          target="_blank"
+        >
+          <h3>Telegram</h3>
+          <p>@Jkhub_premium</p>
         </a>
 
-      </div>
-
-
-      <!-- 15 DAYS -->
-      <div class="plan">
-
-        <h3>15 Days</h3>
-
-        <p>
-          Premium access for 15 days.
-        </p>
-
-        <a class="btn" href="/payment?plan=15days">
-          Choose Plan
-        </a>
-
-      </div>
-
-
-      <!-- 30 DAYS -->
-      <div class="plan">
-
-        <h3>30 Days</h3>
-
-        <p>
-          Premium access for 30 days.
-        </p>
-
-        <a class="btn" href="/payment?plan=30days">
-          Choose Plan
+        <a
+          class="feature"
+          href="https://wa.me/917067603886"
+          target="_blank"
+        >
+          <h3>Payment Related Query</h3>
+          <p>+91 70676 03886</p>
         </a>
 
       </div>
@@ -665,28 +412,10 @@
 
   </section>
 
-
-  <!-- CTA -->
-  <section class="cta">
-
-    <h2>Ready to explore Vexora?</h2>
-
-    <p>
-      Choose your plan and get access to the Vexora
-      market-analysis experience.
-    </p>
-
-    <a class="btn" href="/plans">
-      Get Started
-    </a>
-
-  </section>
-
 </main>
 
-
 <footer>
-  © 2020 Vexora. All rights reserved.
+  © 2026 Vexora. All rights reserved.
 </footer>
 
 </body>
