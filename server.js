@@ -1,48 +1,64 @@
 const express = require("express");
+const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-const ROOT = __dirname;
-
-// Static files root folder se serve honge
-app.use(express.static(ROOT));
-
-// JSON / form data
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-// Home page
-app.get("/", (req, res) => {
-  res.sendFile(path.join(ROOT, "index.html"));
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, uploadDir),
+  filename: (_, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const name = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, name + ext);
+  }
 });
 
-// Plans page
-app.get("/plans", (req, res) => {
-  res.sendFile(path.join(ROOT, "plans.html"));
+const upload = multer({
+  storage,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed."));
+  }
 });
 
-// Payment page
-app.get("/payment", (req, res) => {
-  res.sendFile(path.join(ROOT, "payment.html"));
+app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+app.get("/plans", (_, res) => res.sendFile(path.join(__dirname, "public", "plans.html")));
+app.get("/payment", (_, res) => res.sendFile(path.join(__dirname, "public", "payment.html")));
+app.get("/submit", (_, res) => res.sendFile(path.join(__dirname, "public", "submit.html")));
+app.get("/success", (_, res) => res.sendFile(path.join(__dirname, "public", "success.html")));
+
+app.post("/submit-payment", upload.single("proof"), (req, res) => {
+  const submission = {
+    transactionId: req.body.transactionId || "",
+    tradingview: req.body.tradingview || "",
+    telegram: req.body.telegram || "",
+    proofFile: req.file ? req.file.filename : "",
+    submittedAt: new Date().toISOString()
+  };
+
+  const file = path.join(__dirname, "submissions.json");
+  let submissions = [];
+
+  if (fs.existsSync(file)) {
+    try { submissions = JSON.parse(fs.readFileSync(file, "utf8")); }
+    catch { submissions = []; }
+  }
+
+  submissions.push(submission);
+  fs.writeFileSync(file, JSON.stringify(submissions, null, 2));
+  res.redirect("/success");
 });
 
-// Direct .html URLs bhi work karenge
-app.get("/plans.html", (req, res) => {
-  res.sendFile(path.join(ROOT, "plans.html"));
-});
-
-app.get("/payment.html", (req, res) => {
-  res.sendFile(path.join(ROOT, "payment.html"));
-});
-
-// 404
-app.use((req, res) => {
-  res.status(404).send("Page Not Found");
-});
-
-// Start server
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Vexora running on port ${PORT}`);
 });
