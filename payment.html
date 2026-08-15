@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vexora — Payment</title><link rel="stylesheet" href="/styles.css"></head>
+<body><nav class="nav"><div class="navin"><a class="brand" href="/">V<span>exora</span></a><div class="navlinks"><a href="/plans.html">← Plans</a></div></div></nav>
+<main class="wrap"><section class="section form"><span class="badge">PAYMENT</span><h1>Complete <span class="grad">payment.</span></h1><p class="lead">Pay using UPI or crypto, then submit the details below for manual verification.</p>
+<div class="paybox"><div class="paymethod"><h3>UPI / PhonePe</h3><p class="muted">UPI contact:</p><div class="copy">+91 70676 03886</div><p class="muted">Add your current UPI QR image in <code>public/assets/upi-qr.png</code> if you want a QR displayed.</p></div><div class="paymethod"><h3>Crypto</h3><p class="muted">For security, configure your current wallet addresses in the server/payment page before production use.</p><div class="copy">USDT / ETH / supported networks</div></div></div>
+<div class="notice">Verify the network and payment address carefully before sending crypto. Do not send crypto to an address unless you have independently confirmed it.</div>
+<form id="paymentForm" enctype="multipart/form-data"><div class="row"><div class="field"><label>Selected Plan</label><input id="plan" name="plan" readonly></div><div class="field"><label>Amount (₹)</label><input id="amount" name="amount" readonly></div></div>
+<div class="field"><label>Payment Method</label><select name="method" required><option value="">Choose</option><option>UPI</option><option>Crypto</option></select></div>
+<div class="field"><label>UTR / Transaction ID</label><input name="utr" placeholder="Enter payment reference" required></div>
+<div class="row"><div class="field"><label>TradingView Username</label><input name="tradingview" placeholder="@username or username" required></div><div class="field"><label>Telegram Username</label><input name="telegram" placeholder="@username" required></div></div>
+<div class="field"><label>Payment Screenshot</label><input type="file" name="screenshot" accept="image/*,application/pdf" required></div>
+<button class="btn" type="submit">Submit Payment Details</button><div id="result"></div></form>
+<section class="section"><div class="card"><b>Payment Related Query</b><p class="muted">Need help with payment?</p><a class="btn alt" href="https://t.me/Jkhub_premium">Open Telegram</a></div></section>
+</section></main><footer class="footer">Never share OTP, UPI PIN, wallet seed phrase or password.</footer>
+<script>
+const q=new URLSearchParams(location.search);
+document.getElementById("plan").value=q.get("plan")||"";
+document.getElementById("amount").value=q.get("amount")||"";
+document.getElementById("paymentForm").addEventListener("submit",async e=>{
+ e.preventDefault(); const r=document.getElementById("result"); r.className="notice"; r.textContent="Submitting...";
+ try{const res=await fetch("/api/payment",{method:"POST",body:new FormData(e.target)});const data=await res.json();if(!data.ok)throw new Error(data.error||"Failed");r.textContent="Submitted successfully. Reference: "+data.id;}catch(err){r.textContent=err.message;}
+});
+</script></body></html>
