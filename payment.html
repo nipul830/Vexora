@@ -22,7 +22,7 @@
       max-width:360px;
       height:auto;
       display:block;
-      margin:auto;
+      margin:15px auto;
       border-radius:14px;
       background:#fff;
     }
@@ -40,6 +40,97 @@
       display:block;
       text-align:center;
       margin-top:25px;
+    }
+
+    .address-row{
+      display:flex;
+      gap:10px;
+      align-items:stretch;
+      margin-top:15px;
+    }
+
+    .payment-address{
+      flex:1;
+      min-width:0;
+      padding:14px;
+      border:1px solid rgba(139,92,255,.35);
+      border-radius:12px;
+      background:#080f21;
+      color:#dce5ff;
+      font-size:14px;
+      line-height:1.5;
+      word-break:break-all;
+      user-select:text;
+    }
+
+    .copy-btn,
+    .download-btn{
+      border:0;
+      border-radius:12px;
+      padding:12px 16px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      white-space:nowrap;
+    }
+
+    .copy-btn{
+      background:linear-gradient(135deg,#8b2cff,#087cff);
+      color:#fff;
+    }
+
+    .download-btn{
+      background:#17243d;
+      color:#fff;
+      border:1px solid rgba(139,92,255,.35);
+      margin-top:8px;
+    }
+
+    .copy-btn:active,
+    .download-btn:active{
+      transform:scale(.97);
+    }
+
+    .qr-actions{
+      margin-top:10px;
+      text-align:center;
+    }
+
+    .copy-status{
+      display:block;
+      min-height:20px;
+      margin-top:7px;
+      color:#72f0a3;
+      font-size:13px;
+      font-weight:600;
+    }
+
+    .payment-note{
+      margin-top:10px;
+      color:#9eacd0;
+      font-size:13px;
+    }
+
+    @media(max-width:520px){
+      .address-row{
+        flex-direction:column;
+      }
+
+      .copy-btn{
+        width:100%;
+      }
+
+      .download-btn{
+        width:100%;
+      }
+
+      .payment-address{
+        font-size:13px;
+      }
     }
   </style>
 </head>
@@ -59,63 +150,187 @@
 
   <section class="card">
 
-    <!-- UPI -->
+    <!-- ================= UPI ================= -->
     <div class="card payment-method" onclick="showQR('upi',this)">
       <h2>UPI / PhonePe</h2>
       <p>Tap to show the UPI QR.</p>
 
       <div id="upi" class="qr-box">
+
+        <div class="address-row">
+          <div class="payment-address" id="upi-address">
+            +91 70676 03886
+          </div>
+
+          <button
+            type="button"
+            class="copy-btn"
+            onclick="copyAddress(event,'upi-address','upi-status')">
+            Copy
+          </button>
+        </div>
+
+        <div class="payment-note">
+          UPI / PhonePe contact
+        </div>
+
         <img
-          src="/assets/upi-phonepe.jpg?v=2"
+          src="/assets/upi-phonepe.jpg?v=3"
           alt="UPI PhonePe QR"
         >
+
+        <div class="qr-actions">
+          <a
+            class="download-btn"
+            href="/assets/upi-phonepe.jpg?v=3"
+            download="vexora-upi-phonepe-qr.jpg"
+            onclick="event.stopPropagation()">
+            Download QR
+          </a>
+
+          <span id="upi-status" class="copy-status"></span>
+        </div>
+
       </div>
     </div>
 
 
-    <!-- USDT TRC20 -->
+    <!-- ================= USDT TRC20 ================= -->
     <div class="card payment-method" onclick="showQR('trc20',this)">
       <h2>USDT — TRC20</h2>
       <p>Tap to show the TRC20 QR.</p>
 
       <div id="trc20" class="qr-box">
+
+        <div class="address-row">
+          <div class="payment-address" id="trc20-address">
+            TGnAWoHjXizow51pMuwhwKiboYy22DC2bJ
+          </div>
+
+          <button
+            type="button"
+            class="copy-btn"
+            onclick="copyAddress(event,'trc20-address','trc20-status')">
+            Copy
+          </button>
+        </div>
+
+        <div class="payment-note">
+          USDT network: TRC20
+        </div>
+
         <img
-          src="/assets/usdt-trc20.jpg?v=2"
+          src="/assets/usdt-trc20.jpg?v=3"
           alt="USDT TRC20 QR"
         >
+
+        <div class="qr-actions">
+          <a
+            class="download-btn"
+            href="/assets/usdt-trc20.jpg?v=3"
+            download="vexora-usdt-trc20-qr.jpg"
+            onclick="event.stopPropagation()">
+            Download QR
+          </a>
+
+          <span id="trc20-status" class="copy-status"></span>
+        </div>
+
       </div>
     </div>
 
 
-    <!-- USDT BEP20 -->
+    <!-- ================= USDT BEP20 ================= -->
     <div class="card payment-method" onclick="showQR('bep20',this)">
       <h2>USDT — BEP20</h2>
       <p>Tap to show the BEP20 QR.</p>
 
       <div id="bep20" class="qr-box">
+
+        <div class="address-row">
+          <div class="payment-address" id="bep20-address">
+            0x4ab23A898208485D2bDa4C34D28C57649C1752fD
+          </div>
+
+          <button
+            type="button"
+            class="copy-btn"
+            onclick="copyAddress(event,'bep20-address','bep20-status')">
+            Copy
+          </button>
+        </div>
+
+        <div class="payment-note">
+          USDT network: BEP20
+        </div>
+
         <img
-          src="/assets/usdt-bep20.jpg?v=2"
+          src="/assets/usdt-bep20.jpg?v=3"
           alt="USDT BEP20 QR"
-          onerror="this.parentElement.innerHTML='<p style=&quot;color:#ff8b8b&quot;>BEP20 QR image could not be loaded.</p>'"
         >
+
+        <div class="qr-actions">
+          <a
+            class="download-btn"
+            href="/assets/usdt-bep20.jpg?v=3"
+            download="vexora-usdt-bep20-qr.jpg"
+            onclick="event.stopPropagation()">
+            Download QR
+          </a>
+
+          <span id="bep20-status" class="copy-status"></span>
+        </div>
+
       </div>
     </div>
 
 
-    <!-- ETH ERC20 -->
+    <!-- ================= ETH ERC20 ================= -->
     <div class="card payment-method" onclick="showQR('eth',this)">
       <h2>ETH — ERC20</h2>
       <p>Tap to show the ERC20 QR.</p>
 
       <div id="eth" class="qr-box">
+
+        <div class="address-row">
+          <div class="payment-address" id="eth-address">
+            0x4ab23A898208485D2bDa4C34D28C57649C1752fD
+          </div>
+
+          <button
+            type="button"
+            class="copy-btn"
+            onclick="copyAddress(event,'eth-address','eth-status')">
+            Copy
+          </button>
+        </div>
+
+        <div class="payment-note">
+          ETH network: ERC20
+        </div>
+
         <img
-          src="/assets/eth-erc20.jpg?v=2"
+          src="/assets/eth-erc20.jpg?v=3"
           alt="ETH ERC20 QR"
         >
+
+        <div class="qr-actions">
+          <a
+            class="download-btn"
+            href="/assets/eth-erc20.jpg?v=3"
+            download="vexora-eth-erc20-qr.jpg"
+            onclick="event.stopPropagation()">
+            Download QR
+          </a>
+
+          <span id="eth-status" class="copy-status"></span>
+        </div>
+
       </div>
     </div>
 
 
+    <!-- ================= CONTINUE ================= -->
     <a class="btn continue-btn" href="/submit">
       I Have Paid — Continue
     </a>
@@ -126,6 +341,7 @@
 
 
 <script>
+
 function showQR(id, el) {
 
   document
@@ -140,12 +356,81 @@ function showQR(id, el) {
       card.classList.remove("active");
     });
 
-  document
-    .getElementById(id)
-    .classList.add("show");
+  var selected = document.getElementById(id);
+
+  if (selected) {
+    selected.classList.add("show");
+  }
 
   el.classList.add("active");
 }
+
+
+/* ================= COPY ADDRESS ================= */
+
+function copyAddress(event, elementId, statusId) {
+
+  event.stopPropagation();
+
+  var element = document.getElementById(elementId);
+  var status = document.getElementById(statusId);
+
+  if (!element) return;
+
+  var text = element.innerText.trim();
+
+  function copied() {
+    if (status) {
+      status.textContent = "✓ Copied!";
+      setTimeout(function() {
+        status.textContent = "";
+      }, 2000);
+    }
+  }
+
+  if (navigator.clipboard && window.isSecureContext) {
+
+    navigator.clipboard
+      .writeText(text)
+      .then(copied)
+      .catch(function() {
+        fallbackCopy(text, copied);
+      });
+
+  } else {
+
+    fallbackCopy(text, copied);
+
+  }
+}
+
+
+/* ================= OLD BROWSER COPY ================= */
+
+function fallbackCopy(text, callback) {
+
+  var textarea = document.createElement("textarea");
+
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+
+  textarea.focus();
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+    callback();
+  } catch (e) {
+    alert("Address copy nahi hua. Address ko long press karke copy karein.");
+  }
+
+  document.body.removeChild(textarea);
+}
+
 </script>
 
 </body>
