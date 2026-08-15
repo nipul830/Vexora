@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
 
   <title>Submit Payment Details</title>
 
@@ -23,6 +26,7 @@
       color: #fff;
       font-size: 32px;
       font-weight: 800;
+      text-decoration: none;
     }
 
     .logo span {
@@ -48,6 +52,36 @@
       background: #0d1a35;
       border: 1px solid rgba(125,153,220,.25);
       border-radius: 28px;
+    }
+
+    /* SELECTED PLAN */
+
+    .selected-plan-box {
+      margin-bottom: 22px;
+      padding: 18px;
+      border-radius: 18px;
+      background: #071126;
+      border: 1px solid rgba(139,92,255,.35);
+      text-align: center;
+    }
+
+    .selected-plan-label {
+      color: #9eacd0;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .selected-plan-name {
+      color: #fff;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .selected-plan-amount {
+      margin-top: 6px;
+      color: #a879ff;
+      font-size: 30px;
+      font-weight: 800;
     }
 
     label {
@@ -91,7 +125,7 @@
       font-size: 14px;
     }
 
-    /* ================= UTR GUIDE ================= */
+    /* UTR GUIDE */
 
     .utr-guide {
       margin: 8px 0 14px;
@@ -121,8 +155,6 @@
       color: #fff;
     }
 
-    /* ================= GUIDE IMAGE ================= */
-
     .utr-image-wrap {
       position: relative;
       margin-top: 12px;
@@ -140,35 +172,26 @@
       box-shadow: 0 10px 30px rgba(0,0,0,.25);
     }
 
-    /* CROSS BUTTON */
-
     .utr-close {
       position: absolute;
       top: 8px;
       right: 8px;
       z-index: 10;
-
       width: 38px;
       height: 38px;
-
       border: none;
       border-radius: 50%;
-
       background: rgba(0,0,0,.78);
       color: #fff;
-
       font-size: 18px;
       line-height: 38px;
       text-align: center;
-
       cursor: pointer;
     }
 
     .utr-close:active {
       transform: scale(.90);
     }
-
-    /* ================= DOWNLOAD GUIDE ================= */
 
     .guide-download {
       display: flex;
@@ -181,24 +204,18 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-
       padding: 12px 18px;
-
       border-radius: 12px;
-
       color: #fff;
       text-decoration: none;
-
       font-size: 14px;
       font-weight: 700;
-
       background: linear-gradient(
         90deg,
         #9b2cff,
         #5b55ff,
         #087cff
       );
-
       box-shadow: 0 7px 20px rgba(65,70,255,.22);
     }
 
@@ -206,29 +223,24 @@
       transform: scale(.97);
     }
 
-    /* ================= SUBMIT BUTTON ================= */
+    /* SUBMIT */
 
     .btn {
       width: 100%;
       border: 0;
       border-radius: 18px;
-
       padding: 17px 20px;
       margin-top: 25px;
-
       color: #fff;
       font-size: 17px;
       font-weight: 800;
-
       cursor: pointer;
-
       background: linear-gradient(
         90deg,
         #9b2cff,
         #5b55ff,
         #087cff
       );
-
       box-shadow: 0 8px 25px rgba(65,70,255,.25);
     }
 
@@ -257,9 +269,11 @@
 <body>
 
 <header class="topbar">
-  <div class="logo">
+
+  <a href="/" class="logo">
     V<span>exora</span>
-  </div>
+  </a>
+
 </header>
 
 
@@ -267,7 +281,9 @@
 
   <section class="hero-small">
 
-    <h1>Submit Payment Details</h1>
+    <h1>
+      Submit Payment Details
+    </h1>
 
     <p>
       Payment complete karne ke baad apni details submit karein.
@@ -284,7 +300,46 @@
       enctype="multipart/form-data"
     >
 
-      <!-- ================= UTR ================= -->
+
+      <!-- SELECTED PLAN -->
+
+      <div class="selected-plan-box">
+
+        <div class="selected-plan-label">
+          Selected Plan
+        </div>
+
+        <div
+          id="selectedPlan"
+          class="selected-plan-name">
+          Loading...
+        </div>
+
+        <div
+          id="selectedAmount"
+          class="selected-plan-amount">
+          ₹0
+        </div>
+
+      </div>
+
+
+      <!-- HIDDEN PLAN DATA -->
+
+      <input
+        type="hidden"
+        name="plan"
+        id="planInput"
+      >
+
+      <input
+        type="hidden"
+        name="amount"
+        id="amountInput"
+      >
+
+
+      <!-- UTR -->
 
       <label for="transactionId">
         UTR / Transaction ID
@@ -305,8 +360,6 @@
           Screenshot me UTR highlighted hai.
         </p>
 
-
-        <!-- UTR GUIDE IMAGE -->
 
         <div
           class="utr-image-wrap"
@@ -330,8 +383,6 @@
 
         </div>
 
-
-        <!-- DOWNLOAD GUIDE -->
 
         <div class="guide-download">
 
@@ -362,7 +413,7 @@
       >
 
 
-      <!-- ================= TRADINGVIEW ================= -->
+      <!-- TRADINGVIEW -->
 
       <label for="tradingview">
         TradingView Username
@@ -377,7 +428,7 @@
       >
 
 
-      <!-- ================= TELEGRAM ================= -->
+      <!-- TELEGRAM -->
 
       <label for="telegram">
         Telegram Username
@@ -392,7 +443,7 @@
       >
 
 
-      <!-- ================= PAYMENT PROOF ================= -->
+      <!-- PAYMENT PROOF -->
 
       <label for="proof">
         Payment Proof / Screenshot
@@ -407,7 +458,7 @@
       >
 
 
-      <!-- ================= SUBMIT ================= -->
+      <!-- SUBMIT -->
 
       <button
         class="btn"
@@ -433,11 +484,95 @@ function closeUtrGuide(event) {
     event.stopPropagation();
   }
 
-  const guide = document.querySelector(".utr-guide");
+  const guide =
+    document.querySelector(".utr-guide");
 
   if (guide) {
     guide.removeAttribute("open");
   }
+}
+
+
+/* ================= PLAN + AMOUNT ================= */
+
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+const selectedPlan =
+  params.get("plan");
+
+
+const planData = {
+
+  "7days": {
+    name: "7 Days",
+    amount: "999"
+  },
+
+  "15days": {
+    name: "15 Days",
+    amount: "1499"
+  },
+
+  "30days": {
+    name: "30 Days",
+    amount: "2499"
+  },
+
+  "lifetime": {
+    name: "Lifetime",
+    amount: "11000"
+  }
+
+};
+
+
+const selected =
+  planData[selectedPlan];
+
+
+if (selected) {
+
+  document.getElementById(
+    "selectedPlan"
+  ).textContent =
+    selected.name;
+
+
+  document.getElementById(
+    "selectedAmount"
+  ).textContent =
+    "₹" +
+    Number(selected.amount)
+      .toLocaleString("en-IN");
+
+
+  document.getElementById(
+    "planInput"
+  ).value =
+    selected.name;
+
+
+  document.getElementById(
+    "amountInput"
+  ).value =
+    selected.amount;
+
+} else {
+
+  document.getElementById(
+    "selectedPlan"
+  ).textContent =
+    "Plan not selected";
+
+
+  document.getElementById(
+    "selectedAmount"
+  ).textContent =
+    "₹0";
+
 }
 
 </script>
