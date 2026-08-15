@@ -1,10 +1,402 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Submit Payment Details</title><link rel="stylesheet" href="/styles.css"></head><body>
-<header class="topbar"><div class="logo">V<span>exora</span></div></header>
-<main class="container"><section class="hero-small"><h1>Submit Payment Details</h1><p>Payment complete karne ke baad apni details submit karein.</p></section>
-<section class="card"><form action="/submit-payment" method="POST" enctype="multipart/form-data">
-<label>UTR / Transaction ID</label><input type="text" name="transactionId" placeholder="Enter transaction/reference ID" required>
-<label>TradingView Username</label><input type="text" name="tradingview" placeholder="@username or username" required>
-<label>Telegram Username</label><input type="text" name="telegram" placeholder="@username" required>
-<label>Payment Proof / Screenshot</label><input type="file" name="proof" accept="image/*" required>
-<button class="btn" type="submit">Submit Payment Details</button>
-</form></section></main></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>Submit Payment Details</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+      color: #f5f7ff;
+
+      background:
+        radial-gradient(
+          circle at 50% 0%,
+          #17254d 0%,
+          transparent 42%
+        ),
+        #070d1d;
+    }
+
+
+    /* HEADER */
+
+    .topbar {
+      height: 90px;
+
+      display: flex;
+      align-items: center;
+
+      padding: 0 28px;
+
+      background: #080d1b;
+
+      border-bottom:
+        1px solid #202c49;
+    }
+
+
+    .logo {
+      font-size: 36px;
+      font-weight: 800;
+
+      letter-spacing: -1px;
+    }
+
+
+    .logo span {
+      color: #8b5cff;
+    }
+
+
+    /* MAIN */
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+
+      margin: auto;
+
+      padding:
+        35px 20px 60px;
+    }
+
+
+    /* HERO */
+
+    .hero-small {
+      text-align: center;
+
+      padding:
+        25px 10px 30px;
+    }
+
+
+    .hero-small h1 {
+      margin: 0 0 14px;
+
+      font-size: 44px;
+
+      color: #f5f7ff;
+    }
+
+
+    .hero-small p {
+      margin: 0;
+
+      color: #9eaccb;
+
+      font-size: 18px;
+
+      line-height: 1.6;
+    }
+
+
+    /* CARD */
+
+    .card {
+      background:
+        linear-gradient(
+          145deg,
+          #111c34,
+          #0c152b
+        );
+
+      border:
+        1px solid #29395b;
+
+      border-radius: 22px;
+
+      padding: 28px;
+
+      margin-bottom: 18px;
+
+      box-shadow:
+        0 12px 35px
+        rgba(0,0,0,.18);
+    }
+
+
+    /* LABEL */
+
+    label {
+      display: block;
+
+      margin:
+        20px 0 8px;
+
+      color: #dbe3f7;
+
+      font-size: 16px;
+
+      font-weight: 700;
+    }
+
+
+    /* INPUT */
+
+    input[type="text"],
+    input[type="file"] {
+
+      width: 100%;
+
+      padding: 16px;
+
+      border:
+        1px solid #29395b;
+
+      border-radius: 13px;
+
+      background: #080f22;
+
+      color: #f5f7ff;
+
+      font-size: 16px;
+
+      outline: none;
+    }
+
+
+    input[type="text"]::placeholder {
+      color: #687796;
+    }
+
+
+    input[type="text"]:focus,
+    input[type="file"]:focus {
+
+      border-color: #8b5cff;
+
+      box-shadow:
+        0 0 0 2px
+        rgba(139,92,255,.12);
+    }
+
+
+    /* FILE INPUT */
+
+    input[type="file"] {
+      padding: 12px;
+
+      cursor: pointer;
+    }
+
+
+    /* BUTTON */
+
+    .btn {
+
+      display: inline-block;
+
+      width: 100%;
+
+      margin-top: 25px;
+
+      padding: 17px;
+
+      border: 0;
+
+      border-radius: 14px;
+
+      background:
+        linear-gradient(
+          90deg,
+          #8b35ff,
+          #147cff
+        );
+
+      color: #ffffff;
+
+      font-size: 17px;
+
+      font-weight: 800;
+
+      cursor: pointer;
+
+      text-align: center;
+
+      transition: .2s;
+    }
+
+
+    .btn:hover {
+      transform: translateY(-1px);
+
+      opacity: .94;
+    }
+
+
+    .btn:active {
+      transform: scale(.99);
+    }
+
+
+    /* MOBILE */
+
+    @media (max-width: 600px) {
+
+      .topbar {
+        height: 80px;
+
+        padding: 0 18px;
+      }
+
+
+      .logo {
+        font-size: 32px;
+      }
+
+
+      .container {
+        padding:
+          25px 16px 50px;
+      }
+
+
+      .hero-small h1 {
+        font-size: 34px;
+      }
+
+
+      .hero-small p {
+        font-size: 16px;
+      }
+
+
+      .card {
+        padding: 21px;
+      }
+
+
+      .btn {
+        font-size: 16px;
+      }
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+
+<header class="topbar">
+
+  <div class="logo">
+    V<span>exora</span>
+  </div>
+
+</header>
+
+
+<main class="container">
+
+
+  <section class="hero-small">
+
+    <h1>
+      Submit Payment Details
+    </h1>
+
+    <p>
+      Payment complete karne ke baad
+      apni details submit karein.
+    </p>
+
+  </section>
+
+
+  <section class="card">
+
+    <form
+      action="/submit-payment"
+      method="POST"
+      enctype="multipart/form-data"
+    >
+
+
+      <label>
+        UTR / Transaction ID
+      </label>
+
+      <input
+        type="text"
+        name="transactionId"
+        placeholder="Enter transaction/reference ID"
+        required
+      >
+
+
+      <label>
+        TradingView Username
+      </label>
+
+      <input
+        type="text"
+        name="tradingview"
+        placeholder="@username or username"
+        required
+      >
+
+
+      <label>
+        Telegram Username
+      </label>
+
+      <input
+        type="text"
+        name="telegram"
+        placeholder="@username"
+        required
+      >
+
+
+      <label>
+        Payment Proof / Screenshot
+      </label>
+
+      <input
+        type="file"
+        name="proof"
+        accept="image/*"
+        required
+      >
+
+
+      <button
+        class="btn"
+        type="submit"
+      >
+        Submit Payment Details
+      </button>
+
+
+    </form>
+
+  </section>
+
+
+</main>
+
+
+</body>
+</html>
