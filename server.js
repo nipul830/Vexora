@@ -12,10 +12,6 @@ const PORT = process.env.PORT || 10000;
 
 const REVIEW_TIME_MS = 15 * 60 * 1000;
 
-// ======================================================
-// DEFAULT SETTINGS
-// ======================================================
-
 const DEFAULT_SETTINGS = {
   telegram: "https://t.me/Jkhub_premium",
   contactNumber: "6371406885",
@@ -83,47 +79,32 @@ const settingsFile = path.join(
   "settings.json"
 );
 
-const feedbackFile = path.join(
+const reviewsFile = path.join(
   dataDir,
-  "feedback.json"
+  "reviews.json"
 );
 
-fs.mkdirSync(
-  uploadDir,
-  {
-    recursive: true
-  }
-);
-
-fs.mkdirSync(
-  dataDir,
-  {
-    recursive: true
-  }
-);
+fs.mkdirSync(uploadDir, { recursive: true });
+fs.mkdirSync(dataDir, { recursive: true });
 
 // ======================================================
-// CREATE DATA FILES
+// DATA FILES
 // ======================================================
 
 if (!fs.existsSync(paymentsFile)) {
-
   fs.writeFileSync(
     paymentsFile,
     "[]",
     "utf8"
   );
-
 }
 
-if (!fs.existsSync(feedbackFile)) {
-
+if (!fs.existsSync(reviewsFile)) {
   fs.writeFileSync(
-    feedbackFile,
+    reviewsFile,
     "[]",
     "utf8"
   );
-
 }
 
 // ======================================================
@@ -136,9 +117,7 @@ app.use(
   })
 );
 
-app.use(
-  express.json()
-);
+app.use(express.json());
 
 app.use(
   express.static(publicDir)
@@ -149,62 +128,14 @@ app.use(
 // ======================================================
 
 function cloneDefaults() {
-
   return JSON.parse(
-    JSON.stringify(
-      DEFAULT_SETTINGS
-    )
+    JSON.stringify(DEFAULT_SETTINGS)
   );
-
 }
-
-// ======================================================
-// ESCAPE HTML
-// ======================================================
-
-function escapeHTML(value) {
-
-  if (
-    value === undefined ||
-    value === null
-  ) {
-
-    return "";
-
-  }
-
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
-}
-
-// ======================================================
-// SETTINGS
-// ======================================================
 
 function normalizeSettings(input) {
 
-  const defaults =
-    cloneDefaults();
+  const defaults = cloneDefaults();
 
   const settings = {
     ...defaults,
@@ -246,15 +177,9 @@ function normalizeSettings(input) {
     ...(settings.paymentAddresses || {})
   };
 
-  if (
-    !Array.isArray(
-      settings.plans
-    )
-  ) {
-
+  if (!Array.isArray(settings.plans)) {
     settings.plans =
       defaults.plans;
-
   }
 
   settings.plans =
@@ -266,21 +191,9 @@ function normalizeSettings(input) {
       )
       .map(
         p => ({
-          id:
-            String(
-              p.id || ""
-            ),
-
-          name:
-            String(
-              p.name || ""
-            ),
-
-          amount:
-            Number(
-              p.amount || 0
-            ),
-
+          id: String(p.id || ""),
+          name: String(p.name || ""),
+          amount: Number(p.amount || 0),
           description:
             String(
               p.description || ""
@@ -294,7 +207,6 @@ function normalizeSettings(input) {
       );
 
   return settings;
-
 }
 
 function getSettings() {
@@ -321,7 +233,6 @@ function getSettings() {
       );
 
       return defaults;
-
     }
 
     const data =
@@ -330,12 +241,8 @@ function getSettings() {
         "utf8"
       );
 
-    if (
-      !data.trim()
-    ) {
-
+    if (!data.trim()) {
       return cloneDefaults();
-
     }
 
     return normalizeSettings(
@@ -350,9 +257,7 @@ function getSettings() {
     );
 
     return cloneDefaults();
-
   }
-
 }
 
 function saveSettings(settings) {
@@ -373,7 +278,6 @@ function saveSettings(settings) {
   );
 
   return clean;
-
 }
 
 saveSettings(
@@ -394,22 +298,11 @@ function getPayments() {
         "utf8"
       );
 
-    if (
-      !data.trim()
-    ) {
-
+    if (!data.trim()) {
       return [];
-
     }
 
-    const payments =
-      JSON.parse(data);
-
-    return Array.isArray(
-      payments
-    )
-      ? payments
-      : [];
+    return JSON.parse(data);
 
   } catch (error) {
 
@@ -419,14 +312,10 @@ function getPayments() {
     );
 
     return [];
-
   }
-
 }
 
-function savePayments(
-  payments
-) {
+function savePayments(payments) {
 
   fs.writeFileSync(
     paymentsFile,
@@ -437,92 +326,144 @@ function savePayments(
     ),
     "utf8"
   );
-
 }
 
 // ======================================================
 // CUSTOMER FEEDBACK
 // ======================================================
 
-function getFeedback() {
+function getReviews() {
 
   try {
 
-    if (
-      !fs.existsSync(
-        feedbackFile
-      )
-    ) {
-
-      fs.writeFileSync(
-        feedbackFile,
-        "[]",
-        "utf8"
-      );
-
-      return [];
-
-    }
-
     const data =
       fs.readFileSync(
-        feedbackFile,
+        reviewsFile,
         "utf8"
       );
 
-    if (
-      !data.trim()
-    ) {
-
+    if (!data.trim()) {
       return [];
-
     }
 
-    const feedback =
+    const reviews =
       JSON.parse(data);
 
-    return Array.isArray(
-      feedback
-    )
-      ? feedback
-      : [];
+    if (!Array.isArray(reviews)) {
+      return [];
+    }
+
+    return reviews;
 
   } catch (error) {
 
     console.error(
-      "Feedback read error:",
+      "Reviews read error:",
       error
     );
 
     return [];
-
   }
-
 }
 
-function saveFeedback(
-  feedback
-) {
+function saveReviews(reviews) {
 
   fs.writeFileSync(
-    feedbackFile,
+    reviewsFile,
     JSON.stringify(
-      feedback,
+      reviews,
       null,
       2
     ),
     "utf8"
   );
+}
 
+function getPublicReviews() {
+
+  return getReviews()
+    .filter(
+      review =>
+        review &&
+        review.enabled !== false
+    )
+    .map(
+      review => ({
+        id:
+          String(
+            review.id || ""
+          ),
+
+        name:
+          String(
+            review.name || "Vexora User"
+          ),
+
+        message:
+          String(
+            review.message || ""
+          ),
+
+        rating:
+          Math.min(
+            5,
+            Math.max(
+              1,
+              Number(
+                review.rating || 5
+              )
+            )
+          ),
+
+        photo:
+          String(
+            review.photo || ""
+          )
+      })
+    );
+}
+
+// ======================================================
+// HTML ESCAPE
+// ======================================================
+
+function escapeHTML(value) {
+
+  if (
+    value === undefined ||
+    value === null
+  ) {
+    return "";
+  }
+
+  return String(value)
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 // ======================================================
 // PAYMENT TIMER
 // ======================================================
 
-function getCreatedTime(
-  payment
-) {
+function getCreatedTime(payment) {
 
   const time =
     new Date(
@@ -532,41 +473,31 @@ function getCreatedTime(
   return Number.isNaN(time)
     ? Date.now()
     : time;
-
 }
 
-function getExpiryTime(
-  payment
-) {
+function getExpiryTime(payment) {
 
   return (
     getCreatedTime(payment) +
     REVIEW_TIME_MS
   );
-
 }
 
-function getRemainingMs(
-  payment
-) {
+function getRemainingMs(payment) {
 
   return Math.max(
     0,
     getExpiryTime(payment) -
     Date.now()
   );
-
 }
 
-function isExpired(
-  payment
-) {
+function isExpired(payment) {
 
   return (
     payment.status === "Pending" &&
     getRemainingMs(payment) <= 0
   );
-
 }
 
 function updateExpiredPayments() {
@@ -576,49 +507,37 @@ function updateExpiredPayments() {
 
   let changed = false;
 
-  payments.forEach(
-    payment => {
+  payments.forEach(payment => {
 
-      if (
-        payment.status === "Pending" &&
-        getRemainingMs(payment) <= 0
-      ) {
+    if (
+      payment.status === "Pending" &&
+      getRemainingMs(payment) <= 0
+    ) {
 
-        payment.status =
-          "Expired";
+      payment.status =
+        "Expired";
 
-        payment.expiredAt =
-          new Date().toISOString();
+      payment.expiredAt =
+        new Date().toISOString();
 
-        changed = true;
-
-      }
-
+      changed = true;
     }
-  );
+
+  });
 
   if (changed) {
-
-    savePayments(
-      payments
-    );
-
+    savePayments(payments);
   }
 
   return payments;
-
 }
 
-function formatAdminTime(
-  ms
-) {
+function formatAdminTime(ms) {
 
   const seconds =
     Math.max(
       0,
-      Math.ceil(
-        ms / 1000
-      )
+      Math.ceil(ms / 1000)
     );
 
   const minutes =
@@ -630,13 +549,10 @@ function formatAdminTime(
     seconds % 60;
 
   return (
-    String(minutes)
-      .padStart(2, "0") +
+    String(minutes).padStart(2, "0") +
     ":" +
-    String(remaining)
-      .padStart(2, "0")
+    String(remaining).padStart(2, "0")
   );
-
 }
 
 // ======================================================
@@ -646,24 +562,14 @@ function formatAdminTime(
 const storage =
   multer.diskStorage({
 
-    destination(
-      req,
-      file,
-      cb
-    ) {
-
+    destination(req, file, cb) {
       cb(
         null,
         uploadDir
       );
-
     },
 
-    filename(
-      req,
-      file,
-      cb
-    ) {
+    filename(req, file, cb) {
 
       const ext =
         path.extname(
@@ -680,43 +586,37 @@ const storage =
           .slice(2, 9) +
         ext
       );
-
     }
 
   });
 
 const upload =
   multer({
-
     storage,
 
     limits: {
       fileSize:
         10 * 1024 * 1024
     }
-
   });
 
 // ======================================================
-// HOME FEEDBACK SECTION
+// CUSTOMER FEEDBACK HTML
 // ======================================================
 
-function getFeedbackHomeSection() {
+function getFeedbackSection() {
 
-  return `
+  const reviews =
+    getPublicReviews();
 
-<!-- =====================================================
-     VEXORA CUSTOMER FEEDBACK
-===================================================== -->
+  if (!reviews.length) {
 
-<section
-  id="customer-feedback"
-  class="vexora-feedback-section"
->
+    return `
+<section class="vx-feedback">
 
-  <div class="vexora-feedback-heading">
+  <div class="vx-feedback-inner">
 
-    <div class="vexora-feedback-badge">
+    <div class="vx-feedback-badge">
       CUSTOMER FEEDBACK
     </div>
 
@@ -724,539 +624,459 @@ function getFeedbackHomeSection() {
       What Our Customers Say
     </h2>
 
-    <p>
+    <p class="vx-feedback-subtitle">
       Real feedback from Vexora users.
     </p>
 
-  </div>
-
-  <div
-    id="vexoraFeedbackTrack"
-    class="vexora-feedback-track"
-  >
-
-    <div class="vexora-feedback-loading">
-      Loading customer feedback...
+    <div class="vx-empty-feedback">
+      Customer reviews coming soon.
     </div>
 
   </div>
 
 </section>
+    `;
+
+  }
+
+  const cards =
+    reviews
+      .map(review => {
+
+        const stars =
+          "★".repeat(
+            Number(review.rating)
+          ) +
+          "☆".repeat(
+            5 -
+            Number(review.rating)
+          );
+
+        const photo =
+          review.photo
+            ? `
+              <img
+                src="${escapeHTML(
+                  review.photo
+                )}"
+                alt="${escapeHTML(
+                  review.name
+                )}"
+              >
+            `
+            : `
+              <div class="vx-avatar">
+                ${escapeHTML(
+                  review.name
+                    .charAt(0)
+                    .toUpperCase()
+                )}
+              </div>
+            `;
+
+        return `
+<div class="vx-review-card">
+
+  <div class="vx-review-top">
+
+    <div class="vx-review-photo">
+      ${photo}
+    </div>
+
+    <div class="vx-review-user">
+
+      <div class="vx-review-name">
+        ${escapeHTML(
+          review.name
+        )}
+      </div>
+
+      <div class="vx-stars">
+        ${stars}
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="vx-review-message">
+    ${escapeHTML(
+      review.message
+    )}
+  </div>
+
+</div>
+        `;
+
+      })
+      .join("");
+
+  /*
+    Duplicate cards so the horizontal
+    animation remains continuous.
+  */
+
+  return `
+<section class="vx-feedback">
 
 <style>
 
-.vexora-feedback-section{
+.vx-feedback{
   width:100%;
-  max-width:1100px;
-  margin:75px auto 50px;
-  padding:0 20px;
   overflow:hidden;
+  padding:55px 0 65px;
+  margin:0;
+  position:relative;
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(124,65,255,.12),
+      transparent 55%
+    );
 }
 
-.vexora-feedback-heading{
+.vx-feedback-inner{
+  width:100%;
   text-align:center;
-  margin-bottom:28px;
 }
 
-.vexora-feedback-badge{
-  display:inline-block;
-  padding:7px 14px;
+.vx-feedback-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:9px 20px;
   border-radius:999px;
-  border:1px solid #514d86;
-  color:#a879ff;
-  font-size:11px;
-  font-weight:800;
+  border:1px solid
+    rgba(160,110,255,.55);
+  color:#b78aff;
+  background:
+    rgba(108,65,255,.06);
+  font-size:13px;
+  font-weight:900;
   letter-spacing:1px;
+  box-shadow:
+    0 0 25px
+    rgba(139,92,255,.08);
 }
 
-.vexora-feedback-heading h2{
-  margin:15px 0 8px;
+.vx-feedback h2{
+  margin:22px 15px 8px;
   color:#f5f7ff;
-  font-size:36px;
+  font-size:clamp(
+    32px,
+    5vw,
+    52px
+  );
+  line-height:1.1;
   font-weight:900;
 }
 
-.vexora-feedback-heading p{
-  margin:0;
-  color:#91a0c2;
-  font-size:16px;
+.vx-feedback-subtitle{
+  margin:0 15px 35px;
+  color:#93a4c9;
+  font-size:17px;
 }
 
-.vexora-feedback-track{
+.vx-review-viewport{
   width:100%;
+  overflow:hidden;
+  position:relative;
+  padding:10px 0 25px;
+}
+
+.vx-review-track{
+  width:max-content;
   display:flex;
-  gap:18px;
-  overflow-x:auto;
-  padding:5px 2px 20px;
-  scroll-behavior:smooth;
-  scrollbar-width:none;
+  gap:20px;
+  padding-left:20px;
+
+  animation:
+    vxFeedbackMove
+    35s linear infinite;
 }
 
-.vexora-feedback-track::-webkit-scrollbar{
-  display:none;
+.vx-review-viewport:hover
+.vx-review-track{
+  animation-play-state:paused;
 }
 
-.vexora-feedback-card{
-  flex:0 0 330px;
-  min-height:190px;
-  padding:22px;
-  border-radius:22px;
+.vx-review-card{
+  width:330px;
+  min-height:210px;
+  padding:25px;
+  border-radius:24px;
+  text-align:left;
 
   background:
     linear-gradient(
       145deg,
-      #111d39,
-      #0a142b
+      rgba(17,31,61,.96),
+      rgba(8,19,43,.96)
     );
 
-  border:1px solid #2b3d61;
+  border:
+    1px solid
+    rgba(105,133,202,.28);
 
   box-shadow:
-    0 18px 45px
+    0 20px 60px
     rgba(0,0,0,.25);
 
+  flex-shrink:0;
+
   transition:
-    transform .25s ease,
-    border-color .25s ease;
+    transform .3s ease,
+    border-color .3s ease;
 }
 
-.vexora-feedback-card:hover{
-  transform:translateY(-4px);
-  border-color:#7957d9;
+.vx-review-card:hover{
+  transform:
+    translateY(-5px);
+
+  border-color:
+    rgba(151,101,255,.65);
 }
 
-.vexora-feedback-user{
+.vx-review-top{
   display:flex;
   align-items:center;
-  gap:13px;
-  margin-bottom:15px;
+  gap:14px;
+  margin-bottom:20px;
 }
 
-.vexora-feedback-photo,
-.vexora-feedback-avatar{
-  width:52px;
-  height:52px;
-  flex:none;
+.vx-review-photo{
+  width:58px;
+  height:58px;
+  flex-shrink:0;
+  overflow:hidden;
   border-radius:50%;
+
+  border:
+    2px solid
+    rgba(158,102,255,.75);
+
+  background:
+    linear-gradient(
+      135deg,
+      #8b2cff,
+      #087cff
+    );
+
+  box-shadow:
+    0 0 22px
+    rgba(139,92,255,.22);
 }
 
-.vexora-feedback-photo{
+.vx-review-photo img{
+  width:100%;
+  height:100%;
   object-fit:cover;
-  border:2px solid #8b5cff;
 }
 
-.vexora-feedback-avatar{
+.vx-avatar{
+  width:100%;
+  height:100%;
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#18274a;
-  color:#a879ff;
-  font-size:20px;
+  color:white;
+  font-size:25px;
   font-weight:900;
-  border:2px solid #8b5cff;
 }
 
-.vexora-feedback-name{
-  color:#fff;
-  font-size:17px;
-  font-weight:800;
+.vx-review-name{
+  color:#f6f8ff;
+  font-size:18px;
+  font-weight:900;
+  margin-bottom:6px;
 }
 
-.vexora-feedback-stars{
-  margin-top:4px;
-  font-size:13px;
+.vx-stars{
+  color:#ffd21f;
+  font-size:18px;
   letter-spacing:1px;
 }
 
-.vexora-feedback-message{
-  color:#aebbd7;
+.vx-review-message{
+  color:#aab9d8;
   font-size:15px;
   line-height:1.7;
 }
 
-.vexora-feedback-loading,
-.vexora-feedback-empty{
-  width:100%;
-  text-align:center;
-  padding:35px 20px;
-  color:#8f9dbb;
+.vx-empty-feedback{
+  max-width:700px;
+  margin:30px auto;
+  padding:30px;
+  border-radius:20px;
+  color:#899abd;
+  background:#0b1730;
+  border:1px solid #26385e;
+}
+
+@keyframes vxFeedbackMove{
+
+  0%{
+    transform:
+      translateX(0);
+  }
+
+  100%{
+    transform:
+      translateX(
+        calc(
+          -50% - 10px
+        )
+      );
+  }
+
 }
 
 @media(max-width:600px){
 
-  .vexora-feedback-section{
-    margin-top:55px;
-    padding:0 15px;
+  .vx-feedback{
+    padding:42px 0 50px;
   }
 
-  .vexora-feedback-heading h2{
-    font-size:29px;
+  .vx-review-track{
+    gap:14px;
+    padding-left:14px;
+
+    animation-duration:
+      28s;
   }
 
-  .vexora-feedback-card{
-    flex:0 0 285px;
+  .vx-review-card{
+    width:285px;
+    min-height:205px;
+    padding:21px;
+  }
+
+  .vx-feedback h2{
+    font-size:34px;
   }
 
 }
 
 </style>
 
-<script>
+<div class="vx-feedback-inner">
 
-(function(){
+  <div class="vx-feedback-badge">
+    CUSTOMER FEEDBACK
+  </div>
 
-  const track =
-    document.getElementById(
-      "vexoraFeedbackTrack"
-    );
+  <h2>
+    What Our Customers Say
+  </h2>
 
-  if(!track){
-    return;
-  }
+  <p class="vx-feedback-subtitle">
+    Real feedback from Vexora users.
+  </p>
 
-  function safe(value){
+</div>
 
-    return String(value || "")
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
-      );
+<div class="vx-review-viewport">
 
-  }
+  <div class="vx-review-track">
 
-  async function loadFeedback(){
+    ${cards}
 
-    try{
+    ${cards}
 
-      const response =
-        await fetch(
-          "/api/feedback",
-          {
-            cache:"no-store"
-          }
-        );
+  </div>
 
-      if(!response.ok){
-        throw new Error(
-          "Feedback API error"
-        );
-      }
+</div>
 
-      const data =
-        await response.json();
-
-      if(
-        !Array.isArray(data) ||
-        data.length === 0
-      ){
-
-        track.innerHTML = \`
-          <div class="vexora-feedback-empty">
-            Customer feedback coming soon.
-          </div>
-        \`;
-
-        return;
-
-      }
-
-      track.innerHTML =
-        data
-          .map(
-            item => {
-
-              const name =
-                safe(
-                  item.name ||
-                  "Customer"
-                );
-
-              const message =
-                safe(
-                  item.message ||
-                  ""
-                );
-
-              let rating =
-                Number(
-                  item.rating || 5
-                );
-
-              rating =
-                Math.max(
-                  1,
-                  Math.min(
-                    5,
-                    rating
-                  )
-                );
-
-              const stars =
-                "⭐".repeat(
-                  rating
-                );
-
-              const firstLetter =
-                safe(
-                  (
-                    item.name ||
-                    "C"
-                  )
-                  .charAt(0)
-                  .toUpperCase()
-                );
-
-              const avatar =
-                item.photo
-                  ? \`
-                    <img
-                      class="vexora-feedback-photo"
-                      src="\${safe(item.photo)}"
-                      alt=""
-                    >
-                  \`
-                  : \`
-                    <div
-                      class="vexora-feedback-avatar"
-                    >
-                      \${firstLetter}
-                    </div>
-                  \`;
-
-              return \`
-
-                <article
-                  class="vexora-feedback-card"
-                >
-
-                  <div
-                    class="vexora-feedback-user"
-                  >
-
-                    \${avatar}
-
-                    <div>
-
-                      <div
-                        class="vexora-feedback-name"
-                      >
-                        \${name}
-                      </div>
-
-                      <div
-                        class="vexora-feedback-stars"
-                      >
-                        \${stars}
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  <div
-                    class="vexora-feedback-message"
-                  >
-                    \${message}
-                  </div>
-
-                </article>
-
-              \`;
-
-            }
-          )
-          .join("");
-
-      startAutoScroll();
-
-    }catch(error){
-
-      console.error(
-        "Feedback loading error:",
-        error
-      );
-
-      track.innerHTML = \`
-        <div class="vexora-feedback-empty">
-          Customer feedback coming soon.
-        </div>
-      \`;
-
-    }
-
-  }
-
-  function startAutoScroll(){
-
-    if(
-      track.dataset.started === "1"
-    ){
-      return;
-    }
-
-    track.dataset.started = "1";
-
-    setInterval(
-      function(){
-
-        const max =
-          track.scrollWidth -
-          track.clientWidth;
-
-        if(max <= 0){
-          return;
-        }
-
-        if(
-          track.matches(":hover")
-        ){
-          return;
-        }
-
-        if(
-          track.scrollLeft >=
-          max - 5
-        ){
-
-          track.scrollTo({
-            left:0,
-            behavior:"smooth"
-          });
-
-        }else{
-
-          track.scrollBy({
-            left:348,
-            behavior:"smooth"
-          });
-
-        }
-
-      },
-      3000
-    );
-
-  }
-
-  loadFeedback();
-
-})();
-
-</script>
-
-`;
-
+</section>
+  `;
 }
 
 // ======================================================
 // HOME
 // ======================================================
 
-app.get(
-  "/",
-  (req, res) => {
+app.get("/", (req, res) => {
 
-    const indexFile =
-      path.join(
-        __dirname,
-        "index.html"
-      );
+  const indexPath =
+    path.join(
+      __dirname,
+      "index.html"
+    );
 
-    try{
+  fs.readFile(
+    indexPath,
+    "utf8",
+    (error, html) => {
 
-      let html =
-        fs.readFileSync(
-          indexFile,
-          "utf8"
+      if (error) {
+
+        console.error(
+          "Home read error:",
+          error
         );
 
-      const feedbackSection =
-        getFeedbackHomeSection();
+        return res
+          .status(500)
+          .send(
+            "Home page error"
+          );
+      }
 
-      if(
+      const feedback =
+        getFeedbackSection();
+
+      /*
+        Feedback is inserted immediately
+        after the company header/logo.
+      */
+
+      if (
         html.includes(
-          "</body>"
+          "</header>"
         )
-      ){
+      ) {
 
         html =
           html.replace(
-            "</body>",
-            feedbackSection +
-            "\n</body>"
+            "</header>",
+            "</header>" +
+            feedback
           );
 
-      }else{
+      } else {
 
-        html +=
-          feedbackSection;
+        html =
+          html.replace(
+            "<body>",
+            "<body>" +
+            feedback
+          );
 
       }
 
       res.send(html);
 
-    }catch(error){
-
-      console.error(
-        "Home page error:",
-        error
-      );
-
-      res
-        .status(500)
-        .send(
-          "Home page could not be loaded."
-        );
-
     }
+  );
 
-  }
-);
+});
 
 // ======================================================
 // PLANS PAGE
 // ======================================================
 
-app.get(
-  "/plans",
-  (req, res) => {
+app.get("/plans", (req, res) => {
 
-    const settings =
-      getSettings();
+  const settings =
+    getSettings();
 
-    const freeTrial =
-      settings.freeTrialEnabled
-        ? `
+  const freeTrial =
+    settings.freeTrialEnabled
+      ? `
         <div class="plan free">
-
-          <div class="tag">
-            FREE TRIAL
-          </div>
-
-          <h2>
-            1 Day Free
-          </h2>
-
-          <div class="price">
-            FREE
-          </div>
-
+          <div class="tag">FREE TRIAL</div>
+          <h2>1 Day Free</h2>
+          <div class="price">FREE</div>
           <p>
             Try Vexora premium access
             for 1 day.
@@ -1272,16 +1092,14 @@ app.get(
           >
             Get Free Trial
           </a>
-
         </div>
-        `
-        : "";
+      `
+      : "";
 
-    const cards =
-      settings.plans
-        .map(
-          plan => `
-
+  const cards =
+    settings.plans
+      .map(
+        plan => `
         <div class="plan">
 
           <div class="tag">
@@ -1289,17 +1107,13 @@ app.get(
           </div>
 
           <h2>
-            ${escapeHTML(
-              plan.name
-            )}
+            ${escapeHTML(plan.name)}
           </h2>
 
           <div class="price">
             ₹${Number(
               plan.amount
-            ).toLocaleString(
-              "en-IN"
-            )}
+            ).toLocaleString("en-IN")}
           </div>
 
           <p>
@@ -1318,15 +1132,12 @@ app.get(
           </a>
 
         </div>
-
         `
-        )
-        .join("");
+      )
+      .join("");
 
-    res.send(`
-
+  res.send(`
 <!doctype html>
-
 <html lang="en">
 
 <head>
@@ -1338,9 +1149,7 @@ app.get(
   content="width=device-width,initial-scale=1"
 >
 
-<title>
-Vexora Plans
-</title>
+<title>Vexora Plans</title>
 
 <style>
 
@@ -1353,7 +1162,6 @@ body{
   min-height:100vh;
   font-family:Arial,sans-serif;
   color:#f5f7ff;
-
   background:
     radial-gradient(
       circle at top,
@@ -1365,8 +1173,7 @@ body{
 .topbar{
   padding:22px 28px;
   border-bottom:1px solid #263455;
-  background:
-    rgba(5,11,29,.9);
+  background:rgba(5,11,29,.9);
 }
 
 .logo{
@@ -1410,16 +1217,13 @@ body{
   position:relative;
   padding:28px;
   border-radius:24px;
-
   background:
     linear-gradient(
       145deg,
       #111d39,
       #0a142b
     );
-
   border:1px solid #2b3d61;
-
   box-shadow:
     0 20px 50px
     rgba(0,0,0,.25);
@@ -1470,7 +1274,7 @@ body{
   border-radius:14px;
   color:white;
   font-weight:800;
-
+  text-decoration:none;
   background:
     linear-gradient(
       90deg,
@@ -1503,9 +1307,9 @@ body{
 
 <header class="topbar">
 
-  <div class="logo">
-    V<span>exora</span>
-  </div>
+<div class="logo">
+V<span>exora</span>
+</div>
 
 </header>
 
@@ -1513,21 +1317,21 @@ body{
 
 <section class="hero">
 
-  <h1>
-    Choose Your Plan
-  </h1>
+<h1>
+Choose Your Plan
+</h1>
 
-  <p>
-    Select your Vexora premium membership.
-  </p>
+<p>
+Select your Vexora premium membership.
+</p>
 
 </section>
 
 <section class="plans">
 
-  ${freeTrial}
+${freeTrial}
 
-  ${cards}
+${cards}
 
 </section>
 
@@ -1536,29 +1340,24 @@ body{
 </body>
 
 </html>
+  `);
 
-`);
-
-  }
-);
+});
 
 // ======================================================
 // PAYMENT PAGE
 // ======================================================
 
-app.get(
-  "/payment",
-  (req, res) => {
+app.get("/payment", (req, res) => {
 
-    res.sendFile(
-      path.join(
-        __dirname,
-        "payment.html"
-      )
-    );
+  res.sendFile(
+    path.join(
+      __dirname,
+      "payment.html"
+    )
+  );
 
-  }
-);
+});
 
 // ======================================================
 // SETTINGS API
@@ -1571,26 +1370,21 @@ app.get(
     const settings =
       getSettings();
 
-    res.json(
-      settings
-    );
+    res.json(settings);
 
   }
 );
 
 // ======================================================
-// FEEDBACK API
+// REVIEWS API
 // ======================================================
 
 app.get(
-  "/api/feedback",
+  "/api/reviews",
   (req, res) => {
 
-    const feedback =
-      getFeedback();
-
     res.json(
-      feedback
+      getPublicReviews()
     );
 
   }
@@ -1600,19 +1394,16 @@ app.get(
 // SUBMIT PAGE
 // ======================================================
 
-app.get(
-  "/submit",
-  (req, res) => {
+app.get("/submit", (req, res) => {
 
-    res.sendFile(
-      path.join(
-        __dirname,
-        "submit.html"
-      )
-    );
+  res.sendFile(
+    path.join(
+      __dirname,
+      "submit.html"
+    )
+  );
 
-  }
-);
+});
 
 // ======================================================
 // SUBMIT PAYMENT
@@ -1663,9 +1454,7 @@ app.post(
 
       expiresAt:
         new Date(
-          new Date(
-            createdAt
-          ).getTime() +
+          new Date(createdAt).getTime() +
           REVIEW_TIME_MS
         ).toISOString()
 
@@ -1686,7 +1475,6 @@ app.post(
       getSettings();
 
     res.send(`
-
 <!doctype html>
 
 <html lang="en">
@@ -1717,9 +1505,7 @@ body{
   align-items:center;
   justify-content:center;
   padding:20px;
-
   font-family:Arial,sans-serif;
-
   background:#050b1d;
   color:white;
 }
@@ -1729,13 +1515,9 @@ body{
   max-width:440px;
   padding:35px 25px;
   text-align:center;
-
   border-radius:25px;
-
   background:#0d1a36;
-
   border:1px solid #3a3470;
-
   box-shadow:
     0 25px 70px
     rgba(0,0,0,.4);
@@ -1745,20 +1527,16 @@ body{
   width:70px;
   height:70px;
   margin:auto auto 20px;
-
   display:flex;
   align-items:center;
   justify-content:center;
-
   border-radius:50%;
-
   background:
     linear-gradient(
       135deg,
       #8b2cff,
       #087cff
     );
-
   font-size:38px;
   font-weight:900;
 }
@@ -1771,9 +1549,7 @@ h1{
 .plan{
   padding:17px;
   border-radius:15px;
-
   background:#071126;
-
   border:1px solid #343f69;
 }
 
@@ -1857,14 +1633,12 @@ h1{
   padding:15px;
   border:0;
   border-radius:14px;
-
   background:
     linear-gradient(
       135deg,
       #8b2cff,
       #087cff
     );
-
   color:white;
   font-size:17px;
   font-weight:800;
@@ -1897,18 +1671,14 @@ ${escapeHTML(
 <div class="amount">
 ₹${Number(
   payment.amount || 0
-).toLocaleString(
-  "en-IN"
-)}
+).toLocaleString("en-IN")}
 </div>
 
 </div>
 
 <p class="message">
-
 Your payment request has been submitted.
 Please wait while we verify your payment.
-
 </p>
 
 <div>
@@ -2038,14 +1808,14 @@ function showStatus(value){
     manual.style.display =
       "block";
 
-    manual
-      .querySelector("h2")
-      .textContent =
+    manual.querySelector(
+      "h2"
+    ).textContent =
       "Payment Rejected";
 
-    manual
-      .querySelector("p")
-      .textContent =
+    manual.querySelector(
+      "p"
+    ).textContent =
       "Your payment was rejected. Please contact us on Telegram.";
 
   }
@@ -2072,9 +1842,7 @@ function showStatus(value){
 
 async function checkStatus(){
 
-  if(finished){
-    return;
-  }
+  if(finished) return;
 
   try{
 
@@ -2089,11 +1857,7 @@ async function checkStatus(){
         }
       );
 
-    if(
-      !response.ok
-    ){
-      return;
-    }
+    if(!response.ok) return;
 
     const data =
       await response.json();
@@ -2114,9 +1878,7 @@ async function checkStatus(){
 
 function updateTimer(){
 
-  if(finished){
-    return;
-  }
+  if(finished) return;
 
   const remaining =
     new Date(
@@ -2141,7 +1903,6 @@ function updateTimer(){
     checkStatus();
 
     return;
-
   }
 
   const seconds =
@@ -2183,8 +1944,7 @@ setInterval(
 </body>
 
 </html>
-
-`);
+    `);
 
   }
 );
@@ -2212,7 +1972,8 @@ app.get(
       return res
         .status(404)
         .json({
-          status:"Not Found"
+          status:
+            "Not Found"
         });
 
     }
@@ -2249,8 +2010,8 @@ app.get(
     const settings =
       getSettings();
 
-    const feedback =
-      getFeedback();
+    const reviews =
+      getReviews();
 
     // ==================================================
     // PAYMENT ROWS
@@ -2267,32 +2028,23 @@ app.get(
             if(
               payment.status ===
               "Approved"
-            ){
-
+            )
               statusClass =
                 "approved";
-
-            }
 
             if(
               payment.status ===
               "Rejected"
-            ){
-
+            )
               statusClass =
                 "rejected";
-
-            }
 
             if(
               payment.status ===
               "Expired"
-            ){
-
+            )
               statusClass =
                 "expired";
-
-            }
 
             let action = "";
 
@@ -2303,56 +2055,52 @@ app.get(
 
               action = `
 
-              <div class="timer">
+<div class="timer">
 
-                <span
-                  class="countdown"
-                  data-expiry="${escapeHTML(
-                    payment.expiresAt
-                  )}"
-                >
-                  ${formatAdminTime(
-                    getRemainingMs(
-                      payment
-                    )
-                  )}
-                </span>
+<span
+  class="countdown"
+  data-expiry="${escapeHTML(
+    payment.expiresAt
+  )}"
+>
+${formatAdminTime(
+  getRemainingMs(
+    payment
+  )
+)}
+</span>
 
-              </div>
+</div>
 
-              <div class="actions">
+<div class="actions">
 
-                <form
-                  method="POST"
-                  action="/admin/payment/${encodeURIComponent(
-                    payment.id
-                  )}/approve"
-                >
+<form
+  method="POST"
+  action="/admin/payment/${encodeURIComponent(
+    payment.id
+  )}/approve"
+>
 
-                  <button
-                    class="approve"
-                  >
-                    ✓ Approve
-                  </button>
+<button class="approve">
+✓ Approve
+</button>
 
-                </form>
+</form>
 
-                <form
-                  method="POST"
-                  action="/admin/payment/${encodeURIComponent(
-                    payment.id
-                  )}/reject"
-                >
+<form
+  method="POST"
+  action="/admin/payment/${encodeURIComponent(
+    payment.id
+  )}/reject"
+>
 
-                  <button
-                    class="reject"
-                  >
-                    ✕ Reject
-                  </button>
+<button class="reject">
+✕ Reject
+</button>
 
-                </form>
+</form>
 
-              </div>
+</div>
 
               `;
 
@@ -2363,22 +2111,22 @@ app.get(
 
               action = `
 
-                <div class="manual">
+<div class="manual">
 
-                  <strong>
-                    Manual Review
-                  </strong>
+<strong>
+Manual Review
+</strong>
 
-                  <a
-                    href="${escapeHTML(
-                      settings.telegram
-                    )}"
-                    target="_blank"
-                  >
-                    Telegram
-                  </a>
+<a
+  href="${escapeHTML(
+    settings.telegram
+  )}"
+  target="_blank"
+>
+Telegram
+</a>
 
-                </div>
+</div>
 
               `;
 
@@ -2386,16 +2134,16 @@ app.get(
 
               action = `
 
-                <span class="done">
+<span class="done">
 
-                  ${
-                    payment.status ===
-                    "Approved"
-                      ? "✓ Approved"
-                      : "✕ Rejected"
-                  }
+${
+  payment.status ===
+  "Approved"
+    ? "✓ Approved"
+    : "✕ Rejected"
+}
 
-                </span>
+</span>
 
               `;
 
@@ -2405,15 +2153,15 @@ app.get(
               payment.proof
                 ? `
 
-                  <a
-                    class="proof"
-                    href="${escapeHTML(
-                      payment.proof
-                    )}"
-                    target="_blank"
-                  >
-                    View Proof
-                  </a>
+<a
+  class="proof"
+  href="${escapeHTML(
+    payment.proof
+  )}"
+  target="_blank"
+>
+View Proof
+</a>
 
                 `
                 : "No Proof";
@@ -2423,41 +2171,39 @@ app.get(
 <tr>
 
 <td>
-  <strong>
-    ${escapeHTML(
-      payment.plan
-    )}
-  </strong>
+<strong>
+${escapeHTML(
+  payment.plan
+)}
+</strong>
 </td>
 
 <td class="amount">
-  ₹${Number(
-    payment.amount || 0
-  ).toLocaleString(
-    "en-IN"
-  )}
+₹${Number(
+  payment.amount || 0
+).toLocaleString("en-IN")}
 </td>
 
 <td>
-  ${escapeHTML(
-    payment.transactionId
-  )}
+${escapeHTML(
+  payment.transactionId
+)}
 </td>
 
 <td>
-  ${escapeHTML(
-    payment.tradingview
-  )}
+${escapeHTML(
+  payment.tradingview
+)}
 </td>
 
 <td>
-  ${escapeHTML(
-    payment.telegram
-  )}
+${escapeHTML(
+  payment.telegram
+)}
 </td>
 
 <td>
-  ${proof}
+${proof}
 </td>
 
 <td>
@@ -2465,25 +2211,23 @@ app.get(
 <span
   class="status ${statusClass}"
 >
-  ${escapeHTML(
-    payment.status
-  )}
+${escapeHTML(
+  payment.status
+)}
 </span>
 
 </td>
 
 <td>
-
 ${escapeHTML(
   new Date(
     payment.createdAt
   ).toLocaleString()
 )}
-
 </td>
 
 <td>
-  ${action}
+${action}
 </td>
 
 </tr>
@@ -2605,9 +2349,7 @@ ${escapeHTML(
   )}/edit"
 >
 
-<button
-  class="save"
->
+<button class="save">
 Save
 </button>
 
@@ -2621,9 +2363,7 @@ Save
   onsubmit="return confirm('Delete this plan?')"
 >
 
-<button
-  class="delete"
->
+<button class="delete">
 Delete
 </button>
 
@@ -2640,51 +2380,24 @@ Delete
         .join("");
 
     // ==================================================
-    // FEEDBACK ROWS
+    // REVIEW ROWS
     // ==================================================
 
-    const feedbackRows =
-      feedback
+    const reviewRows =
+      reviews
         .map(
-          item => {
+          review => {
 
-            const photo =
-              item.photo
-                ? `
-
-                  <img
-                    class="feedback-admin-photo"
-                    src="${escapeHTML(
-                      item.photo
-                    )}"
-                    alt=""
-                  >
-
-                `
-                : `
-
-                  <div
-                    class="feedback-admin-avatar"
-                  >
-                    ${escapeHTML(
-                      (
-                        item.name ||
-                        "C"
-                      )
-                        .charAt(0)
-                        .toUpperCase()
-                    )}
-                  </div>
-
-                `;
-
-            const rating =
-              Math.max(
-                1,
+            const stars =
+              "★".repeat(
                 Math.min(
                   5,
-                  Number(
-                    item.rating || 5
+                  Math.max(
+                    1,
+                    Number(
+                      review.rating ||
+                      5
+                    )
                   )
                 )
               );
@@ -2695,55 +2408,110 @@ Delete
 
 <td>
 
-<div class="feedback-admin-user">
+<div class="admin-review-user">
 
-  ${photo}
-
-  <strong>
-    ${escapeHTML(
-      item.name
-    )}
-  </strong>
-
-</div>
-
-</td>
-
-<td>
-
-<div class="admin-stars">
-  ${"⭐".repeat(
-    rating
-  )}
-</div>
-
-</td>
-
-<td class="feedback-message-cell">
-
+${
+  review.photo
+    ? `
+<img
+  src="${escapeHTML(
+    review.photo
+  )}"
+  class="admin-review-photo"
+>
+`
+    : `
+<div class="admin-review-avatar">
 ${escapeHTML(
-  item.message
+  String(
+    review.name ||
+    "U"
+  )
+    .charAt(0)
+    .toUpperCase()
 )}
+</div>
+`
+}
+
+<strong>
+${escapeHTML(
+  review.name
+)}
+</strong>
+
+</div>
 
 </td>
 
 <td>
+
+<span class="admin-stars">
+${stars}
+</span>
+
+</td>
+
+<td class="review-message">
+${escapeHTML(
+  review.message
+)}
+</td>
+
+<td>
+
+<span
+  class="review-enabled ${
+    review.enabled !== false
+      ? "yes"
+      : "no"
+  }"
+>
+${
+  review.enabled !== false
+    ? "Visible"
+    : "Hidden"
+}
+</span>
+
+</td>
+
+<td>
+
+<div class="review-actions">
 
 <form
   method="POST"
-  action="/admin/feedback/${encodeURIComponent(
-    item.id
+  action="/admin/review/${encodeURIComponent(
+    review.id
+  )}/toggle"
+>
+
+<button class="toggle">
+${
+  review.enabled !== false
+    ? "Hide"
+    : "Show"
+}
+</button>
+
+</form>
+
+<form
+  method="POST"
+  action="/admin/review/${encodeURIComponent(
+    review.id
   )}/delete"
   onsubmit="return confirm('Delete this feedback?')"
 >
 
-<button
-  class="delete"
->
+<button class="delete">
 Delete
 </button>
 
 </form>
+
+</div>
 
 </td>
 
@@ -2756,7 +2524,7 @@ Delete
         .join("");
 
     // ==================================================
-    // ADMIN PAGE
+    // ADMIN HTML
     // ==================================================
 
     res.send(`
@@ -2866,7 +2634,6 @@ body{
     repeat(5,1fr);
 
   gap:14px;
-
   margin-bottom:25px;
 }
 
@@ -2904,6 +2671,7 @@ body{
 .panel{
   margin-bottom:25px;
   padding:25px;
+
   border-radius:22px;
 
   background:
@@ -2917,6 +2685,10 @@ body{
 .panel h2{
   margin:0 0 20px;
   font-size:23px;
+}
+
+.panel h3{
+  margin-top:30px;
 }
 
 .settings{
@@ -2982,7 +2754,8 @@ body{
   height:18px;
 }
 
-.primary{
+.primary,
+.add{
   margin-top:18px;
 
   border:0;
@@ -2992,7 +2765,6 @@ body{
 
   color:white;
   font-weight:800;
-
   cursor:pointer;
 
   background:
@@ -3017,22 +2789,20 @@ body{
 
 table{
   width:100%;
-  min-width:900px;
-
-  border-collapse:collapse;
-}
-
-.payment-table{
   min-width:1400px;
+
+  border-collapse:
+    collapse;
 }
 
 th{
   padding:16px;
+
   text-align:left;
 
   color:#8e9dbd;
-  font-size:12px;
 
+  font-size:12px;
   text-transform:uppercase;
 
   border-bottom:
@@ -3049,7 +2819,8 @@ td{
 
   color:#dce5fb;
 
-  vertical-align:middle;
+  vertical-align:
+    middle;
 }
 
 tr:last-child td{
@@ -3127,7 +2898,8 @@ tr:last-child td{
 
 .actions button,
 .save,
-.delete{
+.delete,
+.toggle{
   border:0;
 
   border-radius:9px;
@@ -3137,7 +2909,6 @@ tr:last-child td{
   color:white;
 
   font-weight:800;
-
   cursor:pointer;
 }
 
@@ -3149,6 +2920,10 @@ tr:last-child td{
 .reject,
 .delete{
   background:#a93440;
+}
+
+.toggle{
+  background:#315a9b;
 }
 
 .done{
@@ -3164,7 +2939,6 @@ tr:last-child td{
   border-radius:9px;
 
   color:white;
-
   text-decoration:none;
 
   font-size:12px;
@@ -3180,11 +2954,8 @@ tr:last-child td{
 
 .manual{
   display:flex;
-
   gap:8px;
-
   align-items:center;
-
   flex-wrap:wrap;
 }
 
@@ -3199,21 +2970,18 @@ tr:last-child td{
   border-radius:8px;
 
   color:white;
-
   text-decoration:none;
 
   background:#168dcc;
 
   font-size:12px;
-
   font-weight:800;
 }
 
-.plan-actions{
+.plan-actions,
+.review-actions{
   display:flex;
-
   gap:8px;
-
   flex-wrap:wrap;
 }
 
@@ -3224,7 +2992,6 @@ tr:last-child td{
     1fr 150px 1fr auto;
 
   gap:10px;
-
   align-items:end;
 }
 
@@ -3234,29 +3001,7 @@ tr:last-child td{
   margin-bottom:7px;
 
   color:#aebce0;
-
   font-size:12px;
-}
-
-.add{
-  border:0;
-
-  padding:12px 18px;
-
-  border-radius:10px;
-
-  color:white;
-
-  font-weight:800;
-
-  cursor:pointer;
-
-  background:
-    linear-gradient(
-      90deg,
-      #8b2cff,
-      #087cff
-    );
 }
 
 .empty{
@@ -3267,22 +3012,22 @@ tr:last-child td{
   color:#8190b0;
 }
 
-/* ====================================================
+/* =====================================================
    FEEDBACK ADMIN
-==================================================== */
+===================================================== */
 
-.feedback-form{
+.feedback-add{
   display:grid;
 
   grid-template-columns:
-    1fr 130px 2fr 180px auto;
+    1fr 150px 1.5fr 180px auto;
 
   gap:12px;
 
   align-items:end;
 }
 
-.feedback-form label{
+.feedback-add label{
   display:block;
 
   margin-bottom:7px;
@@ -3292,89 +3037,85 @@ tr:last-child td{
   font-size:12px;
 }
 
-.feedback-add{
-  border:0;
-
-  padding:12px 18px;
-
-  border-radius:10px;
-
-  color:white;
-
-  font-weight:800;
-
-  cursor:pointer;
-
-  background:
-    linear-gradient(
-      90deg,
-      #8b2cff,
-      #087cff
-    );
+.feedback-add .add{
+  margin-top:0;
 }
 
-.feedback-admin-user{
+.admin-review-user{
   display:flex;
   align-items:center;
   gap:12px;
 }
 
-.feedback-admin-photo,
-.feedback-admin-avatar{
-  width:45px;
-  height:45px;
+.admin-review-photo,
+.admin-review-avatar{
+  width:48px;
+  height:48px;
 
-  flex:none;
+  flex-shrink:0;
 
   border-radius:50%;
-}
 
-.feedback-admin-photo{
   object-fit:cover;
 
   border:
     2px solid
-    #8b5cff;
+    #925cff;
 }
 
-.feedback-admin-avatar{
+.admin-review-avatar{
   display:flex;
-
   align-items:center;
   justify-content:center;
 
-  background:#18274a;
+  color:white;
 
-  color:#a879ff;
-
+  font-size:20px;
   font-weight:900;
 
-  border:
-    2px solid
-    #8b5cff;
+  background:
+    linear-gradient(
+      135deg,
+      #8b2cff,
+      #087cff
+    );
 }
 
 .admin-stars{
-  white-space:nowrap;
+  color:#ffd21f;
+  font-size:18px;
 }
 
-.feedback-message-cell{
-  max-width:450px;
-  line-height:1.6;
-  color:#aebbd7;
+.review-message{
+  max-width:400px;
+  line-height:1.5;
+  color:#9eacd0;
 }
 
-.feedback-note{
-  margin-top:12px;
+.review-enabled{
+  display:inline-block;
 
-  color:#7f8eaf;
+  padding:6px 10px;
 
-  font-size:13px;
+  border-radius:999px;
+
+  font-size:11px;
+  font-weight:900;
 }
 
-/* ====================================================
-   RESPONSIVE
-==================================================== */
+.review-enabled.yes{
+  color:#65e99a;
+  background:#103923;
+}
+
+.review-enabled.no{
+  color:#ff7d87;
+  background:#42191d;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
 
 @media(max-width:1100px){
 
@@ -3383,9 +3124,9 @@ tr:last-child td{
       repeat(3,1fr);
   }
 
-  .feedback-form{
+  .feedback-add{
     grid-template-columns:
-      1fr 130px 1fr;
+      1fr 1fr;
   }
 
 }
@@ -3393,7 +3134,8 @@ tr:last-child td{
 @media(max-width:750px){
 
   .settings{
-    grid-template-columns:1fr;
+    grid-template-columns:
+      1fr;
   }
 
   .group.full{
@@ -3401,11 +3143,13 @@ tr:last-child td{
   }
 
   .add-plan{
-    grid-template-columns:1fr;
+    grid-template-columns:
+      1fr;
   }
 
-  .feedback-form{
-    grid-template-columns:1fr;
+  .feedback-add{
+    grid-template-columns:
+      1fr;
   }
 
   .stats{
@@ -3436,6 +3180,18 @@ tr:last-child td{
     font-size:28px;
   }
 
+  .stats{
+    gap:10px;
+  }
+
+  .stat{
+    padding:15px;
+  }
+
+  .stat-number{
+    font-size:25px;
+  }
+
 }
 
 </style>
@@ -3447,10 +3203,7 @@ tr:last-child td{
 <header class="topbar">
 
 <div class="logo">
-
-V<span>exora</span>
-Admin
-
+V<span>exora</span> Admin
 </div>
 
 </header>
@@ -3469,14 +3222,13 @@ Payments, plans, feedback and website controls.
 
 </section>
 
-<!-- ==================================================
+<!-- ===================================================
      STATS
-================================================== -->
+=================================================== -->
 
 <section class="stats">
 
 <div class="stat">
-
 <span class="stat-number">
 ${total}
 </span>
@@ -3484,11 +3236,9 @@ ${total}
 <span class="stat-label">
 Total Payments
 </span>
-
 </div>
 
 <div class="stat">
-
 <span class="stat-number">
 ${pending}
 </span>
@@ -3496,11 +3246,9 @@ ${pending}
 <span class="stat-label">
 Pending
 </span>
-
 </div>
 
 <div class="stat">
-
 <span class="stat-number">
 ${approved}
 </span>
@@ -3508,11 +3256,9 @@ ${approved}
 <span class="stat-label">
 Approved
 </span>
-
 </div>
 
 <div class="stat">
-
 <span class="stat-number">
 ${rejected}
 </span>
@@ -3520,11 +3266,9 @@ ${rejected}
 <span class="stat-label">
 Rejected
 </span>
-
 </div>
 
 <div class="stat">
-
 <span class="stat-number">
 ${expired}
 </span>
@@ -3532,14 +3276,13 @@ ${expired}
 <span class="stat-label">
 Expired
 </span>
-
 </div>
 
 </section>
 
-<!-- ==================================================
+<!-- ===================================================
      WEBSITE SETTINGS
-================================================== -->
+=================================================== -->
 
 <section class="panel">
 
@@ -3658,9 +3401,9 @@ Save Website Settings
 
 </section>
 
-<!-- ==================================================
+<!-- ===================================================
      PLAN MANAGER
-================================================== -->
+=================================================== -->
 
 <section class="panel">
 
@@ -3784,9 +3527,9 @@ Description
 
 </section>
 
-<!-- ==================================================
+<!-- ===================================================
      CUSTOMER FEEDBACK MANAGER
-================================================== -->
+=================================================== -->
 
 <section class="panel">
 
@@ -3794,10 +3537,15 @@ Description
 ⭐ Customer Feedback
 </h2>
 
+<p style="color:#8e9dbd;margin-top:-10px">
+Add customer reviews here. Enabled reviews will appear
+automatically below the Vexora logo on the homepage.
+</p>
+
 <form
-  class="feedback-form"
+  class="feedback-add"
   method="POST"
-  action="/admin/feedback/add"
+  action="/admin/review/add"
   enctype="multipart/form-data"
 >
 
@@ -3809,7 +3557,6 @@ Customer Name
 
 <input
   class="input"
-  type="text"
   name="name"
   placeholder="Rahul"
   required
@@ -3830,23 +3577,23 @@ Rating
 >
 
 <option value="5">
-5 ⭐
+★★★★★ 5
 </option>
 
 <option value="4">
-4 ⭐
+★★★★☆ 4
 </option>
 
 <option value="3">
-3 ⭐
+★★★☆☆ 3
 </option>
 
 <option value="2">
-2 ⭐
+★★☆☆☆ 2
 </option>
 
 <option value="1">
-1 ⭐
+★☆☆☆☆ 1
 </option>
 
 </select>
@@ -3861,9 +3608,8 @@ Feedback Message
 
 <input
   class="input"
-  type="text"
   name="message"
-  placeholder="Amazing indicator and fast support!"
+  placeholder="Excellent service..."
   required
 >
 
@@ -3878,32 +3624,23 @@ Customer Photo
 <input
   class="input"
   type="file"
-  name="feedbackPhoto"
+  name="photo"
   accept="image/*"
 >
 
 </div>
 
-<button
-  class="feedback-add"
->
+<button class="add">
 + Add Feedback
 </button>
 
 </form>
 
-<div class="feedback-note">
-
-Feedback added here will automatically appear on the
-home page and continuously scroll from left to right.
-
-</div>
-
 <br>
 
 <div class="table-wrap">
 
-<table style="min-width:800px">
+<table style="min-width:1000px">
 
 <thead>
 
@@ -3922,6 +3659,10 @@ Message
 </th>
 
 <th>
+Visibility
+</th>
+
+<th>
 Action
 </th>
 
@@ -3932,15 +3673,15 @@ Action
 <tbody>
 
 ${
-  feedbackRows ||
+  reviewRows ||
   `
 <tr>
 
 <td
-  colspan="4"
+  colspan="5"
   class="empty"
 >
-No customer feedback added yet.
+No feedback added yet.
 </td>
 
 </tr>
@@ -3955,9 +3696,9 @@ No customer feedback added yet.
 
 </section>
 
-<!-- ==================================================
+<!-- ===================================================
      PAYMENT DASHBOARD
-================================================== -->
+=================================================== -->
 
 <section class="panel">
 
@@ -3967,7 +3708,7 @@ No customer feedback added yet.
 
 <div class="table-wrap">
 
-<table class="payment-table">
+<table>
 
 <thead>
 
@@ -4079,23 +3820,20 @@ function updateTimers(){
           );
 
         const sec =
-          seconds %
-          60;
+          seconds % 60;
 
         el.textContent =
-          String(
-            minutes
-          ).padStart(
-            2,
-            "0"
-          ) +
+          String(minutes)
+            .padStart(
+              2,
+              "0"
+            ) +
           ":" +
-          String(
-            sec
-          ).padStart(
-            2,
-            "0"
-          );
+          String(sec)
+            .padStart(
+              2,
+              "0"
+            );
 
         if(
           remaining <= 0
@@ -4129,7 +3867,7 @@ setInterval(
 
 </html>
 
-`);
+    `);
 
   }
 );
@@ -4247,8 +3985,7 @@ app.post(
     const originalId =
       id;
 
-    let counter =
-      2;
+    let counter = 2;
 
     while(
       settings.plans.some(
@@ -4269,11 +4006,8 @@ app.post(
     settings.plans.push({
 
       id,
-
       name,
-
       amount,
-
       description
 
     });
@@ -4311,7 +4045,8 @@ app.post(
 
       const name =
         String(
-          req.body.planName || ""
+          req.body.planName ||
+          ""
         ).trim();
 
       if(name){
@@ -4383,8 +4118,8 @@ app.post(
 // ======================================================
 
 app.post(
-  "/admin/feedback/add",
-  upload.single("feedbackPhoto"),
+  "/admin/review/add",
+  upload.single("photo"),
   (req, res) => {
 
     const name =
@@ -4397,17 +4132,14 @@ app.post(
         req.body.message || ""
       ).trim();
 
-    let rating =
-      Number(
-        req.body.rating || 5
-      );
-
-    rating =
-      Math.max(
-        1,
-        Math.min(
-          5,
-          rating
+    const rating =
+      Math.min(
+        5,
+        Math.max(
+          1,
+          Number(
+            req.body.rating || 5
+          )
         )
       );
 
@@ -4422,10 +4154,7 @@ app.post(
 
     }
 
-    const feedback =
-      getFeedback();
-
-    const item = {
+    const review = {
 
       id:
         Date.now() +
@@ -4446,18 +4175,60 @@ app.post(
             req.file.filename
           : "",
 
+      enabled:
+        true,
+
       createdAt:
         new Date().toISOString()
 
     };
 
-    feedback.unshift(
-      item
+    const reviews =
+      getReviews();
+
+    reviews.unshift(
+      review
     );
 
-    saveFeedback(
-      feedback
+    saveReviews(
+      reviews
     );
+
+    res.redirect(
+      "/admin"
+    );
+
+  }
+);
+
+// ======================================================
+// TOGGLE CUSTOMER FEEDBACK
+// ======================================================
+
+app.post(
+  "/admin/review/:id/toggle",
+  (req, res) => {
+
+    const reviews =
+      getReviews();
+
+    const review =
+      reviews.find(
+        r =>
+          r.id ===
+          req.params.id
+      );
+
+    if(review){
+
+      review.enabled =
+        review.enabled === false;
+
+      saveReviews(
+        reviews
+      );
+
+    }
 
     res.redirect(
       "/admin"
@@ -4471,74 +4242,77 @@ app.post(
 // ======================================================
 
 app.post(
-  "/admin/feedback/:id/delete",
+  "/admin/review/:id/delete",
   (req, res) => {
 
-    const feedback =
-      getFeedback();
+    const reviews =
+      getReviews();
 
-    const item =
-      feedback.find(
-        f =>
-          f.id ===
+    const review =
+      reviews.find(
+        r =>
+          r.id ===
           req.params.id
       );
 
-    if(item){
+    const remaining =
+      reviews.filter(
+        r =>
+          r.id !==
+          req.params.id
+      );
 
-      if(
-        item.photo &&
-        item.photo.startsWith(
-          "/uploads/"
-        )
-      ){
+    saveReviews(
+      remaining
+    );
 
-        const photoPath =
-          path.join(
-            publicDir,
-            item.photo.replace(
-              "/",
+    /*
+      Delete uploaded customer photo
+      when feedback is deleted.
+    */
+
+    if(
+      review &&
+      review.photo &&
+      review.photo.startsWith(
+        "/uploads/"
+      )
+    ){
+
+      const photoPath =
+        path.join(
+          publicDir,
+          review.photo
+            .replace(
+              /^\/+/,
               ""
             )
-          );
+        );
 
-        try{
+      try{
 
-          if(
-            fs.existsSync(
-              photoPath
-            )
-          ){
+        if(
+          fs.existsSync(
+            photoPath
+          )
+        ){
 
-            fs.unlinkSync(
-              photoPath
-            );
-
-          }
-
-        }catch(error){
-
-          console.error(
-            "Feedback photo delete error:",
-            error
+          fs.unlinkSync(
+            photoPath
           );
 
         }
 
+      }catch(error){
+
+        console.error(
+          "Review photo delete error:",
+          error
+        );
+
       }
 
     }
-
-    const updated =
-      feedback.filter(
-        f =>
-          f.id !==
-          req.params.id
-      );
-
-    saveFeedback(
-      updated
-    );
 
     res.redirect(
       "/admin"
@@ -4568,7 +4342,7 @@ app.post(
     if(
       payment &&
       payment.status ===
-        "Pending" &&
+      "Pending" &&
       !isExpired(payment)
     ){
 
@@ -4612,7 +4386,7 @@ app.post(
     if(
       payment &&
       payment.status ===
-        "Pending" &&
+      "Pending" &&
       !isExpired(payment)
     ){
 
