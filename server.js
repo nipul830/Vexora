@@ -12,11 +12,24 @@ const PORT = process.env.PORT || 10000;
 
 const REVIEW_TIME_MS = 15 * 60 * 1000;
 
+// Railway Persistent Volume ke liye:
+// Railway me Volume mount path /data rakho.
+// Agar DATA_DIR environment variable set hai,
+// wahi use hoga.
+const DATA_DIR =
+  process.env.DATA_DIR ||
+  process.env.RAILWAY_VOLUME_MOUNT_PATH ||
+  path.join(__dirname, "data");
+
 const DEFAULT_SETTINGS = {
   telegram: "https://t.me/Jkhub_premium",
+
   contactNumber: "6371406885",
+
   upiId: "",
+
   qrImage: "",
+
   freeTrialEnabled: true,
 
   paymentQrs: {
@@ -28,9 +41,15 @@ const DEFAULT_SETTINGS = {
 
   paymentAddresses: {
     upi: "+91 70676 03886",
-    trc20: "TGnAWoHjXizow51pMuwhwKiboYy22DC2bJ",
-    bep20: "0x4ab23A898208485D2bDa4C34D28C57649C1752fD",
-    eth: "0x4ab23A898208485D2bDa4C34D28C57649C1752fD"
+
+    trc20:
+      "TGnAWoHjXizow51pMuwhwKiboYy22DC2bJ",
+
+    bep20:
+      "0x4ab23A898208485D2bDa4C34D28C57649C1752fD",
+
+    eth:
+      "0x4ab23A898208485D2bDa4C34D28C57649C1752fD"
   },
 
   plans: [
@@ -38,25 +57,32 @@ const DEFAULT_SETTINGS = {
       id: "7days",
       name: "7 Days",
       amount: 999,
-      description: "Premium Vexora access for 7 days."
+      description:
+        "Premium Vexora access for 7 days."
     },
+
     {
       id: "15days",
       name: "15 Days",
       amount: 1499,
-      description: "Premium Vexora access for 15 days."
+      description:
+        "Premium Vexora access for 15 days."
     },
+
     {
       id: "30days",
       name: "30 Days",
       amount: 2499,
-      description: "Premium Vexora access for 30 days."
+      description:
+        "Premium Vexora access for 30 days."
     },
+
     {
       id: "lifetime",
       name: "Lifetime",
       amount: 11000,
-      description: "Lifetime Vexora premium access."
+      description:
+        "Lifetime Vexora premium access."
     }
   ]
 };
@@ -65,9 +91,20 @@ const DEFAULT_SETTINGS = {
 // DIRECTORIES
 // ======================================================
 
-const publicDir = path.join(__dirname, "public");
-const uploadDir = path.join(publicDir, "uploads");
-const dataDir = path.join(__dirname, "data");
+const publicDir = path.join(
+  __dirname,
+  "public"
+);
+
+// IMPORTANT:
+// Uploads ab Railway persistent storage
+// me save honge.
+const uploadDir = path.join(
+  DATA_DIR,
+  "uploads"
+);
+
+const dataDir = DATA_DIR;
 
 const paymentsFile = path.join(
   dataDir,
@@ -84,14 +121,37 @@ const reviewsFile = path.join(
   "reviews.json"
 );
 
-fs.mkdirSync(uploadDir, { recursive: true });
-fs.mkdirSync(dataDir, { recursive: true });
+// Create persistent directories
+fs.mkdirSync(
+  dataDir,
+  {
+    recursive: true
+  }
+);
+
+fs.mkdirSync(
+  uploadDir,
+  {
+    recursive: true
+  }
+);
+
+fs.mkdirSync(
+  publicDir,
+  {
+    recursive: true
+  }
+);
 
 // ======================================================
 // DATA FILES
 // ======================================================
 
-if (!fs.existsSync(paymentsFile)) {
+if (
+  !fs.existsSync(
+    paymentsFile
+  )
+) {
   fs.writeFileSync(
     paymentsFile,
     "[]",
@@ -99,10 +159,30 @@ if (!fs.existsSync(paymentsFile)) {
   );
 }
 
-if (!fs.existsSync(reviewsFile)) {
+if (
+  !fs.existsSync(
+    reviewsFile
+  )
+) {
   fs.writeFileSync(
     reviewsFile,
     "[]",
+    "utf8"
+  );
+}
+
+if (
+  !fs.existsSync(
+    settingsFile
+  )
+) {
+  fs.writeFileSync(
+    settingsFile,
+    JSON.stringify(
+      DEFAULT_SETTINGS,
+      null,
+      2
+    ),
     "utf8"
   );
 }
@@ -117,10 +197,29 @@ app.use(
   })
 );
 
-app.use(express.json());
-
 app.use(
-  express.static(publicDir)
+  express.json()
+);
+
+// Normal public files
+app.use(
+  express.static(
+    publicDir
+  )
+);
+
+// IMPORTANT:
+// Persistent uploads public URL.
+// Files physical location:
+// /data/uploads/...
+//
+// Browser URL:
+// /uploads/filename.jpg
+app.use(
+  "/uploads",
+  express.static(
+    uploadDir
+  )
 );
 
 // ======================================================
@@ -129,13 +228,39 @@ app.use(
 
 function cloneDefaults() {
   return JSON.parse(
-    JSON.stringify(DEFAULT_SETTINGS)
+    JSON.stringify(
+      DEFAULT_SETTINGS
+    )
   );
 }
 
-function normalizeSettings(input) {
+// ======================================================
+// HTML ESCAPE
+// ======================================================
 
-  const defaults = cloneDefaults();
+function escapeHTML(value) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
+    return "";
+  }
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// ======================================================
+// SETTINGS
+// ======================================================
+
+function normalizeSettings(input) {
+  const defaults =
+    cloneDefaults();
 
   const settings = {
     ...defaults,
@@ -177,7 +302,11 @@ function normalizeSettings(input) {
     ...(settings.paymentAddresses || {})
   };
 
-  if (!Array.isArray(settings.plans)) {
+  if (
+    !Array.isArray(
+      settings.plans
+    )
+  ) {
     settings.plans =
       defaults.plans;
   }
@@ -191,9 +320,18 @@ function normalizeSettings(input) {
       )
       .map(
         p => ({
-          id: String(p.id || ""),
-          name: String(p.name || ""),
-          amount: Number(p.amount || 0),
+          id: String(
+            p.id || ""
+          ),
+
+          name: String(
+            p.name || ""
+          ),
+
+          amount: Number(
+            p.amount || 0
+          ),
+
           description:
             String(
               p.description || ""
@@ -210,15 +348,12 @@ function normalizeSettings(input) {
 }
 
 function getSettings() {
-
   try {
-
     if (
       !fs.existsSync(
         settingsFile
       )
     ) {
-
       const defaults =
         cloneDefaults();
 
@@ -241,7 +376,9 @@ function getSettings() {
         "utf8"
       );
 
-    if (!data.trim()) {
+    if (
+      !data.trim()
+    ) {
       return cloneDefaults();
     }
 
@@ -250,7 +387,6 @@ function getSettings() {
     );
 
   } catch (error) {
-
     console.error(
       "Settings read error:",
       error
@@ -260,8 +396,9 @@ function getSettings() {
   }
 }
 
-function saveSettings(settings) {
-
+function saveSettings(
+  settings
+) {
   const clean =
     normalizeSettings(
       settings
@@ -289,23 +426,29 @@ saveSettings(
 // ======================================================
 
 function getPayments() {
-
   try {
-
     const data =
       fs.readFileSync(
         paymentsFile,
         "utf8"
       );
 
-    if (!data.trim()) {
+    if (
+      !data.trim()
+    ) {
       return [];
     }
 
-    return JSON.parse(data);
+    const payments =
+      JSON.parse(data);
+
+    return Array.isArray(
+      payments
+    )
+      ? payments
+      : [];
 
   } catch (error) {
-
     console.error(
       "Payments read error:",
       error
@@ -315,8 +458,9 @@ function getPayments() {
   }
 }
 
-function savePayments(payments) {
-
+function savePayments(
+  payments
+) {
   fs.writeFileSync(
     paymentsFile,
     JSON.stringify(
@@ -333,30 +477,33 @@ function savePayments(payments) {
 // ======================================================
 
 function getReviews() {
-
   try {
-
     const data =
       fs.readFileSync(
         reviewsFile,
         "utf8"
       );
 
-    if (!data.trim()) {
+    if (
+      !data.trim()
+    ) {
       return [];
     }
 
     const reviews =
       JSON.parse(data);
 
-    if (!Array.isArray(reviews)) {
+    if (
+      !Array.isArray(
+        reviews
+      )
+    ) {
       return [];
     }
 
     return reviews;
 
   } catch (error) {
-
     console.error(
       "Reviews read error:",
       error
@@ -366,8 +513,9 @@ function getReviews() {
   }
 }
 
-function saveReviews(reviews) {
-
+function saveReviews(
+  reviews
+) {
   fs.writeFileSync(
     reviewsFile,
     JSON.stringify(
@@ -380,7 +528,6 @@ function saveReviews(reviews) {
 }
 
 function getPublicReviews() {
-
   return getReviews()
     .filter(
       review =>
@@ -396,7 +543,8 @@ function getPublicReviews() {
 
         name:
           String(
-            review.name || "Vexora User"
+            review.name ||
+            "Vexora User"
           ),
 
         message:
@@ -424,47 +572,12 @@ function getPublicReviews() {
 }
 
 // ======================================================
-// HTML ESCAPE
-// ======================================================
-
-function escapeHTML(value) {
-
-  if (
-    value === undefined ||
-    value === null
-  ) {
-    return "";
-  }
-
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-}
-
-// ======================================================
 // PAYMENT TIMER
 // ======================================================
 
-function getCreatedTime(payment) {
-
+function getCreatedTime(
+  payment
+) {
   const time =
     new Date(
       payment.createdAt
@@ -475,69 +588,87 @@ function getCreatedTime(payment) {
     : time;
 }
 
-function getExpiryTime(payment) {
-
+function getExpiryTime(
+  payment
+) {
   return (
-    getCreatedTime(payment) +
+    getCreatedTime(
+      payment
+    ) +
     REVIEW_TIME_MS
   );
 }
 
-function getRemainingMs(payment) {
-
+function getRemainingMs(
+  payment
+) {
   return Math.max(
     0,
-    getExpiryTime(payment) -
-    Date.now()
+    getExpiryTime(
+      payment
+    ) -
+      Date.now()
   );
 }
 
-function isExpired(payment) {
-
+function isExpired(
+  payment
+) {
   return (
-    payment.status === "Pending" &&
-    getRemainingMs(payment) <= 0
+    payment.status ===
+      "Pending" &&
+    getRemainingMs(
+      payment
+    ) <= 0
   );
 }
 
 function updateExpiredPayments() {
-
   const payments =
     getPayments();
 
-  let changed = false;
+  let changed =
+    false;
 
-  payments.forEach(payment => {
+  payments.forEach(
+    payment => {
+      if (
+        payment.status ===
+          "Pending" &&
+        getRemainingMs(
+          payment
+        ) <= 0
+      ) {
+        payment.status =
+          "Expired";
 
-    if (
-      payment.status === "Pending" &&
-      getRemainingMs(payment) <= 0
-    ) {
+        payment.expiredAt =
+          new Date().toISOString();
 
-      payment.status =
-        "Expired";
-
-      payment.expiredAt =
-        new Date().toISOString();
-
-      changed = true;
+        changed =
+          true;
+      }
     }
-
-  });
+  );
 
   if (changed) {
-    savePayments(payments);
+    savePayments(
+      payments
+    );
   }
 
   return payments;
 }
 
-function formatAdminTime(ms) {
-
+function formatAdminTime(
+  ms
+) {
   const seconds =
     Math.max(
       0,
-      Math.ceil(ms / 1000)
+      Math.ceil(
+        ms / 1000
+      )
     );
 
   const minutes =
@@ -549,9 +680,15 @@ function formatAdminTime(ms) {
     seconds % 60;
 
   return (
-    String(minutes).padStart(2, "0") +
+    String(minutes).padStart(
+      2,
+      "0"
+    ) +
     ":" +
-    String(remaining).padStart(2, "0")
+    String(remaining).padStart(
+      2,
+      "0"
+    )
   );
 }
 
@@ -561,16 +698,22 @@ function formatAdminTime(ms) {
 
 const storage =
   multer.diskStorage({
-
-    destination(req, file, cb) {
+    destination(
+      req,
+      file,
+      cb
+    ) {
       cb(
         null,
         uploadDir
       );
     },
 
-    filename(req, file, cb) {
-
+    filename(
+      req,
+      file,
+      cb
+    ) {
       const ext =
         path.extname(
           file.originalname
@@ -579,15 +722,14 @@ const storage =
       cb(
         null,
         "file-" +
-        Date.now() +
-        "-" +
-        Math.random()
-          .toString(36)
-          .slice(2, 9) +
-        ext
+          Date.now() +
+          "-" +
+          Math.random()
+            .toString(36)
+            .slice(2, 9) +
+          ext
       );
     }
-
   });
 
 const upload =
@@ -605,76 +747,168 @@ const upload =
 // ======================================================
 
 function getFeedbackSection() {
-
   const reviews =
     getPublicReviews();
 
-  if (!reviews.length) {
-
+  if (
+    !reviews.length
+  ) {
     return `
 <section class="vx-feedback">
 
-  <div class="vx-feedback-inner">
+<style>
 
-    <div class="vx-feedback-badge">
-      CUSTOMER FEEDBACK
-    </div>
+.vx-feedback{
+  width:100%;
+  overflow:hidden;
+  padding:55px 0 65px;
+  margin:0;
+  position:relative;
 
-    <h2>
-      What Our Customers Say
-    </h2>
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(124,65,255,.12),
+      transparent 55%
+    );
+}
 
-    <p class="vx-feedback-subtitle">
-      Real feedback from Vexora users.
-    </p>
+.vx-feedback-inner{
+  width:100%;
+  text-align:center;
+}
 
-    <div class="vx-empty-feedback">
-      Customer reviews coming soon.
-    </div>
+.vx-feedback-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 
+  padding:9px 20px;
+
+  border-radius:999px;
+
+  border:
+    1px solid
+    rgba(160,110,255,.55);
+
+  color:#b78aff;
+
+  background:
+    rgba(108,65,255,.06);
+
+  font-size:13px;
+  font-weight:900;
+
+  letter-spacing:1px;
+}
+
+.vx-feedback h2{
+  margin:22px 15px 8px;
+
+  color:#f5f7ff;
+
+  font-size:
+    clamp(
+      32px,
+      5vw,
+      52px
+    );
+
+  line-height:1.1;
+  font-weight:900;
+}
+
+.vx-feedback-subtitle{
+  margin:
+    0 15px 35px;
+
+  color:#93a4c9;
+
+  font-size:17px;
+}
+
+.vx-empty-feedback{
+  max-width:700px;
+  margin:30px auto;
+  padding:30px;
+
+  border-radius:20px;
+
+  color:#899abd;
+
+  background:#0b1730;
+
+  border:
+    1px solid
+    #26385e;
+}
+
+</style>
+
+<div class="vx-feedback-inner">
+
+  <div class="vx-feedback-badge">
+    CUSTOMER FEEDBACK
   </div>
 
-</section>
-    `;
+  <h2>
+    What Our Customers Say
+  </h2>
 
+  <p class="vx-feedback-subtitle">
+    Real feedback from Vexora users.
+  </p>
+
+  <div class="vx-empty-feedback">
+    Customer reviews coming soon.
+  </div>
+
+</div>
+
+</section>
+`;
   }
 
   const cards =
     reviews
-      .map(review => {
+      .map(
+        review => {
+          const stars =
+            "★".repeat(
+              Number(
+                review.rating
+              )
+            ) +
+            "☆".repeat(
+              5 -
+                Number(
+                  review.rating
+                )
+            );
 
-        const stars =
-          "★".repeat(
-            Number(review.rating)
-          ) +
-          "☆".repeat(
-            5 -
-            Number(review.rating)
-          );
+          const photo =
+            review.photo
+              ? `
+<img
+  src="${escapeHTML(
+    review.photo
+  )}"
+  alt="${escapeHTML(
+    review.name
+  )}"
+>
+`
+              : `
+<div class="vx-avatar">
+  ${escapeHTML(
+    review.name
+      .charAt(0)
+      .toUpperCase()
+  )}
+</div>
+`;
 
-        const photo =
-          review.photo
-            ? `
-              <img
-                src="${escapeHTML(
-                  review.photo
-                )}"
-                alt="${escapeHTML(
-                  review.name
-                )}"
-              >
-            `
-            : `
-              <div class="vx-avatar">
-                ${escapeHTML(
-                  review.name
-                    .charAt(0)
-                    .toUpperCase()
-                )}
-              </div>
-            `;
-
-        return `
+          return `
 <div class="vx-review-card">
 
   <div class="vx-review-top">
@@ -706,15 +940,10 @@ function getFeedbackSection() {
   </div>
 
 </div>
-        `;
-
-      })
+`;
+        }
+      )
       .join("");
-
-  /*
-    Duplicate cards so the horizontal
-    animation remains continuous.
-  */
 
   return `
 <section class="vx-feedback">
@@ -724,9 +953,15 @@ function getFeedbackSection() {
 .vx-feedback{
   width:100%;
   overflow:hidden;
-  padding:55px 0 65px;
+
+  padding:
+    55px 0
+    65px;
+
   margin:0;
+
   position:relative;
+
   background:
     radial-gradient(
       circle at 50% 0%,
@@ -744,50 +979,74 @@ function getFeedbackSection() {
   display:inline-flex;
   align-items:center;
   justify-content:center;
+
   padding:9px 20px;
+
   border-radius:999px;
-  border:1px solid
+
+  border:
+    1px solid
     rgba(160,110,255,.55);
+
   color:#b78aff;
+
   background:
     rgba(108,65,255,.06);
+
   font-size:13px;
   font-weight:900;
+
   letter-spacing:1px;
+
   box-shadow:
     0 0 25px
     rgba(139,92,255,.08);
 }
 
 .vx-feedback h2{
-  margin:22px 15px 8px;
+  margin:
+    22px 15px 8px;
+
   color:#f5f7ff;
-  font-size:clamp(
-    32px,
-    5vw,
-    52px
-  );
+
+  font-size:
+    clamp(
+      32px,
+      5vw,
+      52px
+    );
+
   line-height:1.1;
   font-weight:900;
 }
 
 .vx-feedback-subtitle{
-  margin:0 15px 35px;
+  margin:
+    0 15px 35px;
+
   color:#93a4c9;
+
   font-size:17px;
 }
 
 .vx-review-viewport{
   width:100%;
   overflow:hidden;
+
   position:relative;
-  padding:10px 0 25px;
+
+  padding:
+    10px 0
+    25px;
 }
 
 .vx-review-track{
   width:max-content;
+
   display:flex;
+
   gap:20px;
+
   padding-left:20px;
 
   animation:
@@ -797,14 +1056,18 @@ function getFeedbackSection() {
 
 .vx-review-viewport:hover
 .vx-review-track{
-  animation-play-state:paused;
+  animation-play-state:
+    paused;
 }
 
 .vx-review-card{
   width:330px;
   min-height:210px;
+
   padding:25px;
+
   border-radius:24px;
+
   text-align:left;
 
   background:
@@ -839,16 +1102,22 @@ function getFeedbackSection() {
 
 .vx-review-top{
   display:flex;
+
   align-items:center;
+
   gap:14px;
+
   margin-bottom:20px;
 }
 
 .vx-review-photo{
   width:58px;
   height:58px;
+
   flex-shrink:0;
+
   overflow:hidden;
+
   border-radius:50%;
 
   border:
@@ -870,47 +1139,49 @@ function getFeedbackSection() {
 .vx-review-photo img{
   width:100%;
   height:100%;
+
   object-fit:cover;
 }
 
 .vx-avatar{
   width:100%;
   height:100%;
+
   display:flex;
+
   align-items:center;
   justify-content:center;
+
   color:white;
+
   font-size:25px;
   font-weight:900;
 }
 
 .vx-review-name{
   color:#f6f8ff;
+
   font-size:18px;
+
   font-weight:900;
+
   margin-bottom:6px;
 }
 
 .vx-stars{
   color:#ffd21f;
+
   font-size:18px;
+
   letter-spacing:1px;
 }
 
 .vx-review-message{
   color:#aab9d8;
-  font-size:15px;
-  line-height:1.7;
-}
 
-.vx-empty-feedback{
-  max-width:700px;
-  margin:30px auto;
-  padding:30px;
-  border-radius:20px;
-  color:#899abd;
-  background:#0b1730;
-  border:1px solid #26385e;
+  font-size:15px;
+
+  line-height:1.7;
 }
 
 @keyframes vxFeedbackMove{
@@ -934,11 +1205,14 @@ function getFeedbackSection() {
 @media(max-width:600px){
 
   .vx-feedback{
-    padding:42px 0 50px;
+    padding:
+      42px 0
+      50px;
   }
 
   .vx-review-track{
     gap:14px;
+
     padding-left:14px;
 
     animation-duration:
@@ -947,7 +1221,9 @@ function getFeedbackSection() {
 
   .vx-review-card{
     width:285px;
+
     min-height:205px;
+
     padding:21px;
   }
 
@@ -988,156 +1264,216 @@ function getFeedbackSection() {
 </div>
 
 </section>
-  `;
+`;
 }
 
 // ======================================================
 // HOME
 // ======================================================
 
-app.get("/", (req, res) => {
+app.get(
+  "/",
+  (req, res) => {
+    const indexPath =
+      path.join(
+        __dirname,
+        "index.html"
+      );
 
-  const indexPath =
-    path.join(
-      __dirname,
-      "index.html"
-    );
+    fs.readFile(
+      indexPath,
+      "utf8",
+      (
+        error,
+        html
+      ) => {
+        if (error) {
+          console.error(
+            "Home read error:",
+            error
+          );
 
-  fs.readFile(
-    indexPath,
-    "utf8",
-    (error, html) => {
+          return res
+            .status(500)
+            .send(
+              "Home page error"
+            );
+        }
 
-      if (error) {
+        const feedback =
+          getFeedbackSection();
 
-        console.error(
-          "Home read error:",
-          error
+        /*
+        IMPORTANT:
+
+        Feedback ab header ke niche
+        INSERT NAHI hoga.
+
+        Hum isko homepage ke
+        MEMBERSHIP section se just
+        pehle insert karenge.
+
+        Tumhare index.html me ye marker hai:
+
+        <!-- MEMBERSHIP -->
+
+        Isliye Feedback middle me rahega.
+        */
+
+        if (
+          html.includes(
+            "<!-- MEMBERSHIP -->"
+          )
+        ) {
+          html =
+            html.replace(
+              "<!-- MEMBERSHIP -->",
+              feedback +
+                "\n\n" +
+                "<!-- MEMBERSHIP -->"
+            );
+        }
+
+        /*
+        Agar future me marker remove ho jaye
+        to Customer Care se pehle insert
+        karne ki fallback setting.
+        */
+
+        else if (
+          html.includes(
+            "<!-- CUSTOMER CARE -->"
+          )
+        ) {
+          html =
+            html.replace(
+              "<!-- CUSTOMER CARE -->",
+              feedback +
+                "\n\n" +
+                "<!-- CUSTOMER CARE -->"
+            );
+        }
+
+        /*
+        Last fallback:
+        </main> se pehle.
+        */
+
+        else if (
+          html.includes(
+            "</main>"
+          )
+        ) {
+          html =
+            html.replace(
+              "</main>",
+              feedback +
+                "\n</main>"
+            );
+        }
+
+        res.send(
+          html
         );
-
-        return res
-          .status(500)
-          .send(
-            "Home page error"
-          );
       }
-
-      const feedback =
-        getFeedbackSection();
-
-      /*
-        Feedback is inserted immediately
-        after the company header/logo.
-      */
-
-      if (
-        html.includes(
-          "</header>"
-        )
-      ) {
-
-        html =
-          html.replace(
-            "</header>",
-            "</header>" +
-            feedback
-          );
-
-      } else {
-
-        html =
-          html.replace(
-            "<body>",
-            "<body>" +
-            feedback
-          );
-
-      }
-
-      res.send(html);
-
-    }
-  );
-
-});
+    );
+  }
+);
 
 // ======================================================
 // PLANS PAGE
 // ======================================================
 
-app.get("/plans", (req, res) => {
+app.get(
+  "/plans",
+  (req, res) => {
+    const settings =
+      getSettings();
 
-  const settings =
-    getSettings();
+    const freeTrial =
+      settings.freeTrialEnabled
+        ? `
+<div class="plan free">
 
-  const freeTrial =
-    settings.freeTrialEnabled
-      ? `
-        <div class="plan free">
-          <div class="tag">FREE TRIAL</div>
-          <h2>1 Day Free</h2>
-          <div class="price">FREE</div>
-          <p>
-            Try Vexora premium access
-            for 1 day.
-          </p>
+  <div class="tag">
+    FREE TRIAL
+  </div>
 
-          <a
-            class="btn"
-            href="https://wa.me/${escapeHTML(
-              settings.contactNumber
-            )}?text=Hi%20Vexora%2C%20I%20want%20the%201%20Day%20Free%20plan."
-            target="_blank"
-            rel="noopener"
-          >
-            Get Free Trial
-          </a>
-        </div>
-      `
-      : "";
+  <h2>
+    1 Day Free
+  </h2>
 
-  const cards =
-    settings.plans
-      .map(
-        plan => `
-        <div class="plan">
+  <div class="price">
+    FREE
+  </div>
 
-          <div class="tag">
-            VEXORA PREMIUM
-          </div>
+  <p>
+    Try Vexora premium access
+    for 1 day.
+  </p>
 
-          <h2>
-            ${escapeHTML(plan.name)}
-          </h2>
+  <a
+    class="btn"
+    href="https://wa.me/${escapeHTML(
+      settings.contactNumber
+    )}?text=Hi%20Vexora%2C%20I%20want%20the%201%20Day%20Free%20plan."
+    target="_blank"
+    rel="noopener"
+  >
+    Get Free Trial
+  </a>
 
-          <div class="price">
-            ₹${Number(
-              plan.amount
-            ).toLocaleString("en-IN")}
-          </div>
+</div>
+`
+        : "";
 
-          <p>
-            ${escapeHTML(
-              plan.description
-            )}
-          </p>
+    const cards =
+      settings.plans
+        .map(
+          plan => `
+<div class="plan">
 
-          <a
-            class="btn"
-            href="/payment?plan=${encodeURIComponent(
-              plan.id
-            )}"
-          >
-            Select Plan
-          </a>
+  <div class="tag">
+    VEXORA PREMIUM
+  </div>
 
-        </div>
-        `
-      )
-      .join("");
+  <h2>
+    ${escapeHTML(
+      plan.name
+    )}
+  </h2>
 
-  res.send(`
+  <div class="price">
+    ₹${Number(
+      plan.amount
+    ).toLocaleString(
+      "en-IN"
+    )}
+  </div>
+
+  <p>
+    ${escapeHTML(
+      plan.description
+    )}
+  </p>
+
+  <a
+    class="btn"
+    href="/payment?plan=${encodeURIComponent(
+      plan.id
+    )}"
+  >
+    Select Plan
+  </a>
+
+</div>
+`
+        )
+        .join("");
+
+    res.send(`
 <!doctype html>
+
 <html lang="en">
 
 <head>
@@ -1149,7 +1485,9 @@ app.get("/plans", (req, res) => {
   content="width=device-width,initial-scale=1"
 >
 
-<title>Vexora Plans</title>
+<title>
+Vexora Plans
+</title>
 
 <style>
 
@@ -1160,8 +1498,14 @@ app.get("/plans", (req, res) => {
 body{
   margin:0;
   min-height:100vh;
-  font-family:Arial,sans-serif;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
   color:#f5f7ff;
+
   background:
     radial-gradient(
       circle at top,
@@ -1172,8 +1516,13 @@ body{
 
 .topbar{
   padding:22px 28px;
-  border-bottom:1px solid #263455;
-  background:rgba(5,11,29,.9);
+
+  border-bottom:
+    1px solid
+    #263455;
+
+  background:
+    rgba(5,11,29,.9);
 }
 
 .logo{
@@ -1187,43 +1536,60 @@ body{
 
 .container{
   max-width:1000px;
+
   margin:auto;
-  padding:45px 20px 70px;
+
+  padding:
+    45px 20px
+    70px;
 }
 
 .hero{
   text-align:center;
+
   margin-bottom:35px;
 }
 
 .hero h1{
   font-size:48px;
-  margin:0 0 12px;
+
+  margin:
+    0 0 12px;
 }
 
 .hero p{
   color:#9eacd0;
+
   font-size:18px;
 }
 
 .plans{
   display:grid;
+
   grid-template-columns:
     repeat(2,1fr);
+
   gap:20px;
 }
 
 .plan{
   position:relative;
+
   padding:28px;
+
   border-radius:24px;
+
   background:
     linear-gradient(
       145deg,
       #111d39,
       #0a142b
     );
-  border:1px solid #2b3d61;
+
+  border:
+    1px solid
+    #2b3d61;
+
   box-shadow:
     0 20px 50px
     rgba(0,0,0,.25);
@@ -1235,46 +1601,70 @@ body{
 
 .tag{
   display:inline-block;
-  padding:6px 10px;
+
+  padding:
+    6px 10px;
+
   border-radius:999px;
+
   background:#18274a;
+
   color:#a879ff;
+
   font-size:11px;
+
   font-weight:800;
 }
 
 .free .tag{
   color:#64e69b;
+
   background:#103b2a;
 }
 
 .plan h2{
   font-size:27px;
-  margin:18px 0 5px;
+
+  margin:
+    18px 0 5px;
 }
 
 .price{
   font-size:38px;
+
   font-weight:900;
+
   color:#a879ff;
-  margin:12px 0;
+
+  margin:
+    12px 0;
 }
 
 .plan p{
   color:#9eacd0;
+
   line-height:1.6;
+
   min-height:50px;
 }
 
 .btn{
   display:block;
+
   text-align:center;
+
   padding:15px;
+
   margin-top:20px;
+
   border-radius:14px;
+
   color:white;
+
   font-weight:800;
+
   text-decoration:none;
+
   background:
     linear-gradient(
       90deg,
@@ -1340,24 +1730,25 @@ ${cards}
 </body>
 
 </html>
-  `);
-
-});
+`);
+  }
+);
 
 // ======================================================
 // PAYMENT PAGE
 // ======================================================
 
-app.get("/payment", (req, res) => {
-
-  res.sendFile(
-    path.join(
-      __dirname,
-      "payment.html"
-    )
-  );
-
-});
+app.get(
+  "/payment",
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        __dirname,
+        "payment.html"
+      )
+    );
+  }
+);
 
 // ======================================================
 // SETTINGS API
@@ -1366,12 +1757,9 @@ app.get("/payment", (req, res) => {
 app.get(
   "/api/settings",
   (req, res) => {
-
-    const settings =
-      getSettings();
-
-    res.json(settings);
-
+    res.json(
+      getSettings()
+    );
   }
 );
 
@@ -1382,11 +1770,9 @@ app.get(
 app.get(
   "/api/reviews",
   (req, res) => {
-
     res.json(
       getPublicReviews()
     );
-
   }
 );
 
@@ -1394,16 +1780,17 @@ app.get(
 // SUBMIT PAGE
 // ======================================================
 
-app.get("/submit", (req, res) => {
-
-  res.sendFile(
-    path.join(
-      __dirname,
-      "submit.html"
-    )
-  );
-
-});
+app.get(
+  "/submit",
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        __dirname,
+        "submit.html"
+      )
+    );
+  }
+);
 
 // ======================================================
 // SUBMIT PAYMENT
@@ -1413,12 +1800,10 @@ app.post(
   "/submit-payment",
   upload.single("proof"),
   (req, res) => {
-
     const createdAt =
       new Date().toISOString();
 
     const payment = {
-
       id:
         Date.now() +
         "-" +
@@ -1433,13 +1818,16 @@ app.post(
         req.body.amount || "",
 
       transactionId:
-        req.body.transactionId || "",
+        req.body.transactionId ||
+        "",
 
       tradingview:
-        req.body.tradingview || "",
+        req.body.tradingview ||
+        "",
 
       telegram:
-        req.body.telegram || "",
+        req.body.telegram ||
+        "",
 
       proof:
         req.file
@@ -1454,10 +1842,11 @@ app.post(
 
       expiresAt:
         new Date(
-          new Date(createdAt).getTime() +
-          REVIEW_TIME_MS
+          new Date(
+            createdAt
+          ).getTime() +
+            REVIEW_TIME_MS
         ).toISOString()
-
     };
 
     const payments =
@@ -1500,24 +1889,42 @@ Payment Submitted
 
 body{
   margin:0;
+
   min-height:100vh;
+
   display:flex;
+
   align-items:center;
   justify-content:center;
+
   padding:20px;
-  font-family:Arial,sans-serif;
+
+  font-family:
+    Arial,
+    sans-serif;
+
   background:#050b1d;
+
   color:white;
 }
 
 .card{
   width:100%;
   max-width:440px;
-  padding:35px 25px;
+
+  padding:
+    35px 25px;
+
   text-align:center;
+
   border-radius:25px;
+
   background:#0d1a36;
-  border:1px solid #3a3470;
+
+  border:
+    1px solid
+    #3a3470;
+
   box-shadow:
     0 25px 70px
     rgba(0,0,0,.4);
@@ -1526,31 +1933,46 @@ body{
 .icon{
   width:70px;
   height:70px;
-  margin:auto auto 20px;
+
+  margin:
+    auto auto 20px;
+
   display:flex;
+
   align-items:center;
   justify-content:center;
+
   border-radius:50%;
+
   background:
     linear-gradient(
       135deg,
       #8b2cff,
       #087cff
     );
+
   font-size:38px;
+
   font-weight:900;
 }
 
 h1{
   font-size:27px;
-  margin:0 0 20px;
+
+  margin:
+    0 0 20px;
 }
 
 .plan{
   padding:17px;
+
   border-radius:15px;
+
   background:#071126;
-  border:1px solid #343f69;
+
+  border:
+    1px solid
+    #343f69;
 }
 
 .plan-name{
@@ -1560,20 +1982,28 @@ h1{
 
 .amount{
   margin-top:5px;
+
   color:#a879ff;
+
   font-size:27px;
+
   font-weight:900;
 }
 
 .message{
   color:#a9b8dc;
+
   line-height:1.6;
-  margin:20px 0;
+
+  margin:
+    20px 0;
 }
 
 .timer{
   font-size:34px;
+
   font-weight:900;
+
   margin-top:5px;
 }
 
@@ -1583,9 +2013,13 @@ h1{
 
 .status{
   display:none;
+
   margin-top:18px;
+
   padding:13px;
+
   border-radius:12px;
+
   font-weight:800;
 }
 
@@ -1601,46 +2035,67 @@ h1{
 
 .manual{
   display:none;
+
   margin-top:18px;
+
   padding:16px;
+
   border-radius:15px;
+
   background:#27181a;
 }
 
 .manual h2{
   color:#ff9aa3;
-  margin:0 0 8px;
+
+  margin:
+    0 0 8px;
 }
 
 .manual p{
   color:#c5cad8;
+
   line-height:1.5;
 }
 
 .telegram{
   display:block;
+
   padding:14px;
+
   border-radius:12px;
+
   background:#168dcc;
+
   color:white;
+
   text-decoration:none;
+
   font-weight:800;
 }
 
 .ok{
   width:100%;
+
   margin-top:20px;
+
   padding:15px;
+
   border:0;
+
   border-radius:14px;
+
   background:
     linear-gradient(
       135deg,
       #8b2cff,
       #087cff
     );
+
   color:white;
+
   font-size:17px;
+
   font-weight:800;
 }
 
@@ -1671,7 +2126,9 @@ ${escapeHTML(
 <div class="amount">
 ₹${Number(
   payment.amount || 0
-).toLocaleString("en-IN")}
+).toLocaleString(
+  "en-IN"
+)}
 </div>
 
 </div>
@@ -1762,13 +2219,17 @@ document.getElementById(
 
 let finished = false;
 
-function showStatus(value){
+function showStatus(
+  value
+){
 
   if(
-    value === "Approved"
+    value ===
+    "Approved"
   ){
 
-    finished = true;
+    finished =
+      true;
 
     status.textContent =
       "✓ Payment Approved";
@@ -1784,14 +2245,15 @@ function showStatus(value){
 
     manual.style.display =
       "none";
-
   }
 
   if(
-    value === "Rejected"
+    value ===
+    "Rejected"
   ){
 
-    finished = true;
+    finished =
+      true;
 
     status.textContent =
       "✕ Payment Rejected";
@@ -1817,14 +2279,15 @@ function showStatus(value){
       "p"
     ).textContent =
       "Your payment was rejected. Please contact us on Telegram.";
-
   }
 
   if(
-    value === "Expired"
+    value ===
+    "Expired"
   ){
 
-    finished = true;
+    finished =
+      true;
 
     timer.textContent =
       "00:00";
@@ -1835,14 +2298,16 @@ function showStatus(value){
 
     manual.style.display =
       "block";
-
   }
-
 }
 
 async function checkStatus(){
 
-  if(finished) return;
+  if(
+    finished
+  ) {
+    return;
+  }
 
   try{
 
@@ -1853,11 +2318,16 @@ async function checkStatus(){
           paymentId
         ),
         {
-          cache:"no-store"
+          cache:
+            "no-store"
         }
       );
 
-    if(!response.ok) return;
+    if(
+      !response.ok
+    ) {
+      return;
+    }
 
     const data =
       await response.json();
@@ -1873,12 +2343,15 @@ async function checkStatus(){
     );
 
   }
-
 }
 
 function updateTimer(){
 
-  if(finished) return;
+  if(
+    finished
+  ) {
+    return;
+  }
 
   const remaining =
     new Date(
@@ -1907,24 +2380,32 @@ function updateTimer(){
 
   const seconds =
     Math.ceil(
-      remaining / 1000
+      remaining /
+        1000
     );
 
   const min =
     Math.floor(
-      seconds / 60
+      seconds /
+        60
     );
 
   const sec =
-    seconds % 60;
+    seconds %
+    60;
 
   timer.textContent =
     String(min)
-      .padStart(2,"0") +
+      .padStart(
+        2,
+        "0"
+      ) +
     ":" +
     String(sec)
-      .padStart(2,"0");
-
+      .padStart(
+        2,
+        "0"
+      );
 }
 
 updateTimer();
@@ -1944,8 +2425,7 @@ setInterval(
 </body>
 
 </html>
-    `);
-
+`);
   }
 );
 
@@ -1967,19 +2447,18 @@ app.get(
           req.params.id
       );
 
-    if(!payment){
-
+    if(
+      !payment
+    ){
       return res
         .status(404)
         .json({
           status:
             "Not Found"
         });
-
     }
 
     res.json({
-
       status:
         payment.status,
 
@@ -1990,9 +2469,7 @@ app.get(
 
       expiresAt:
         payment.expiresAt
-
     });
-
   }
 );
 
@@ -2028,25 +2505,29 @@ app.get(
             if(
               payment.status ===
               "Approved"
-            )
+            ) {
               statusClass =
                 "approved";
+            }
 
             if(
               payment.status ===
               "Rejected"
-            )
+            ) {
               statusClass =
                 "rejected";
+            }
 
             if(
               payment.status ===
               "Expired"
-            )
+            ) {
               statusClass =
                 "expired";
+            }
 
-            let action = "";
+            let action =
+              "";
 
             if(
               payment.status ===
@@ -2054,7 +2535,6 @@ app.get(
             ){
 
               action = `
-
 <div class="timer">
 
 <span
@@ -2081,7 +2561,9 @@ ${formatAdminTime(
   )}/approve"
 >
 
-<button class="approve">
+<button
+  class="approve"
+>
 ✓ Approve
 </button>
 
@@ -2094,23 +2576,23 @@ ${formatAdminTime(
   )}/reject"
 >
 
-<button class="reject">
+<button
+  class="reject"
+>
 ✕ Reject
 </button>
 
 </form>
 
 </div>
+`;
 
-              `;
-
-            }else if(
+            } else if(
               payment.status ===
               "Expired"
             ){
 
               action = `
-
 <div class="manual">
 
 <strong>
@@ -2127,13 +2609,11 @@ Telegram
 </a>
 
 </div>
+`;
 
-              `;
-
-            }else{
+            } else {
 
               action = `
-
 <span class="done">
 
 ${
@@ -2144,15 +2624,12 @@ ${
 }
 
 </span>
-
-              `;
-
+`;
             }
 
             const proof =
               payment.proof
                 ? `
-
 <a
   class="proof"
   href="${escapeHTML(
@@ -2162,12 +2639,10 @@ ${
 >
 View Proof
 </a>
-
-                `
+`
                 : "No Proof";
 
             return `
-
 <tr>
 
 <td>
@@ -2181,7 +2656,9 @@ ${escapeHTML(
 <td class="amount">
 ₹${Number(
   payment.amount || 0
-).toLocaleString("en-IN")}
+).toLocaleString(
+  "en-IN"
+)}
 </td>
 
 <td>
@@ -2231,9 +2708,7 @@ ${action}
 </td>
 
 </tr>
-
-            `;
-
+`;
           }
         )
         .join("");
@@ -2281,7 +2756,6 @@ ${action}
       settings.plans
         .map(
           plan => `
-
 <tr>
 
 <td>
@@ -2349,7 +2823,9 @@ ${action}
   )}/edit"
 >
 
-<button class="save">
+<button
+  class="save"
+>
 Save
 </button>
 
@@ -2363,7 +2839,9 @@ Save
   onsubmit="return confirm('Delete this plan?')"
 >
 
-<button class="delete">
+<button
+  class="delete"
+>
 Delete
 </button>
 
@@ -2374,8 +2852,7 @@ Delete
 </td>
 
 </tr>
-
-          `
+`
         )
         .join("");
 
@@ -2403,7 +2880,6 @@ Delete
               );
 
             return `
-
 <tr>
 
 <td>
@@ -2487,7 +2963,9 @@ ${
   )}/toggle"
 >
 
-<button class="toggle">
+<button
+  class="toggle"
+>
 ${
   review.enabled !== false
     ? "Hide"
@@ -2505,7 +2983,9 @@ ${
   onsubmit="return confirm('Delete this feedback?')"
 >
 
-<button class="delete">
+<button
+  class="delete"
+>
 Delete
 </button>
 
@@ -2516,9 +2996,7 @@ Delete
 </td>
 
 </tr>
-
-            `;
-
+`;
           }
         )
         .join("");
@@ -2554,6 +3032,7 @@ Vexora Admin Dashboard
 
 body{
   margin:0;
+
   min-height:100vh;
 
   font-family:
@@ -2573,10 +3052,13 @@ body{
 
 .topbar{
   position:sticky;
+
   top:0;
+
   z-index:20;
 
-  padding:20px 28px;
+  padding:
+    20px 28px;
 
   background:
     rgba(5,11,29,.88);
@@ -2591,6 +3073,7 @@ body{
 
 .logo{
   font-size:34px;
+
   font-weight:900;
 }
 
@@ -2602,16 +3085,23 @@ body{
       #087cff
     );
 
-  -webkit-background-clip:text;
-  background-clip:text;
+  -webkit-background-clip:
+    text;
+
+  background-clip:
+    text;
 
   color:transparent;
 }
 
 .container{
   max-width:1550px;
+
   margin:auto;
-  padding:30px 20px 70px;
+
+  padding:
+    30px 20px
+    70px;
 }
 
 .header{
@@ -2619,26 +3109,32 @@ body{
 }
 
 .header h1{
-  margin:0 0 8px;
+  margin:
+    0 0 8px;
+
   font-size:36px;
 }
 
 .header p{
   margin:0;
+
   color:#91a0c2;
 }
 
 .stats{
   display:grid;
+
   grid-template-columns:
     repeat(5,1fr);
 
   gap:14px;
+
   margin-bottom:25px;
 }
 
 .stat{
   padding:20px;
+
   border-radius:20px;
 
   background:
@@ -2659,17 +3155,21 @@ body{
 
 .stat-number{
   display:block;
+
   font-size:30px;
+
   font-weight:900;
 }
 
 .stat-label{
   color:#8e9dbd;
+
   font-size:13px;
 }
 
 .panel{
   margin-bottom:25px;
+
   padding:25px;
 
   border-radius:22px;
@@ -2683,7 +3183,9 @@ body{
 }
 
 .panel h2{
-  margin:0 0 20px;
+  margin:
+    0 0 20px;
+
   font-size:23px;
 }
 
@@ -2693,6 +3195,7 @@ body{
 
 .settings{
   display:grid;
+
   grid-template-columns:
     repeat(2,1fr);
 
@@ -2701,7 +3204,9 @@ body{
 
 .group{
   display:flex;
+
   flex-direction:column;
+
   gap:7px;
 }
 
@@ -2711,22 +3216,28 @@ body{
 
 .group label{
   color:#cbd7f4;
+
   font-size:13px;
+
   font-weight:700;
 }
 
 .input{
   width:100%;
-  padding:12px 13px;
+
+  padding:
+    12px 13px;
 
   border:
     1px solid
     #293d65;
 
   border-radius:11px;
+
   outline:none;
 
   background:#071126;
+
   color:#fff;
 }
 
@@ -2740,10 +3251,13 @@ body{
 
 .checkbox{
   display:flex;
+
   align-items:center;
+
   gap:10px;
 
   padding:13px;
+
   border-radius:11px;
 
   background:#071126;
@@ -2759,12 +3273,16 @@ body{
   margin-top:18px;
 
   border:0;
-  padding:13px 20px;
+
+  padding:
+    13px 20px;
 
   border-radius:11px;
 
   color:white;
+
   font-weight:800;
+
   cursor:pointer;
 
   background:
@@ -2789,6 +3307,7 @@ body{
 
 table{
   width:100%;
+
   min-width:1400px;
 
   border-collapse:
@@ -2803,6 +3322,7 @@ th{
   color:#8e9dbd;
 
   font-size:12px;
+
   text-transform:uppercase;
 
   border-bottom:
@@ -2829,38 +3349,46 @@ tr:last-child td{
 
 .amount{
   color:#a879ff;
+
   font-weight:900;
+
   white-space:nowrap;
 }
 
 .status{
   display:inline-block;
 
-  padding:7px 11px;
+  padding:
+    7px 11px;
 
   border-radius:999px;
 
   font-size:12px;
+
   font-weight:800;
 }
 
 .pending{
   background:#3a2d08;
+
   color:#ffd75c;
 }
 
 .approved{
   background:#103923;
+
   color:#65e99a;
 }
 
 .rejected{
   background:#42191d;
+
   color:#ff7d87;
 }
 
 .expired{
   background:#422417;
+
   color:#ffad72;
 }
 
@@ -2871,7 +3399,8 @@ tr:last-child td{
 .countdown{
   display:inline-block;
 
-  padding:6px 10px;
+  padding:
+    6px 10px;
 
   border-radius:8px;
 
@@ -2884,11 +3413,13 @@ tr:last-child td{
     #3b3272;
 
   font-weight:900;
+
   font-size:12px;
 }
 
 .actions{
   display:flex;
+
   gap:7px;
 }
 
@@ -2904,11 +3435,13 @@ tr:last-child td{
 
   border-radius:9px;
 
-  padding:9px 12px;
+  padding:
+    9px 12px;
 
   color:white;
 
   font-weight:800;
+
   cursor:pointer;
 }
 
@@ -2928,20 +3461,24 @@ tr:last-child td{
 
 .done{
   color:#8c9ab7;
+
   font-size:13px;
 }
 
 .proof{
   display:inline-block;
 
-  padding:9px 12px;
+  padding:
+    9px 12px;
 
   border-radius:9px;
 
   color:white;
+
   text-decoration:none;
 
   font-size:12px;
+
   font-weight:800;
 
   background:
@@ -2954,34 +3491,43 @@ tr:last-child td{
 
 .manual{
   display:flex;
+
   gap:8px;
+
   align-items:center;
+
   flex-wrap:wrap;
 }
 
 .manual strong{
   color:#ffad72;
+
   font-size:12px;
 }
 
 .manual a{
-  padding:8px 10px;
+  padding:
+    8px 10px;
 
   border-radius:8px;
 
   color:white;
+
   text-decoration:none;
 
   background:#168dcc;
 
   font-size:12px;
+
   font-weight:800;
 }
 
 .plan-actions,
 .review-actions{
   display:flex;
+
   gap:8px;
+
   flex-wrap:wrap;
 }
 
@@ -2992,6 +3538,7 @@ tr:last-child td{
     1fr 150px 1fr auto;
 
   gap:10px;
+
   align-items:end;
 }
 
@@ -3001,7 +3548,12 @@ tr:last-child td{
   margin-bottom:7px;
 
   color:#aebce0;
+
   font-size:12px;
+}
+
+.add{
+  margin-top:0;
 }
 
 .empty{
@@ -3037,13 +3589,11 @@ tr:last-child td{
   font-size:12px;
 }
 
-.feedback-add .add{
-  margin-top:0;
-}
-
 .admin-review-user{
   display:flex;
+
   align-items:center;
+
   gap:12px;
 }
 
@@ -3065,12 +3615,15 @@ tr:last-child td{
 
 .admin-review-avatar{
   display:flex;
+
   align-items:center;
+
   justify-content:center;
 
   color:white;
 
   font-size:20px;
+
   font-weight:900;
 
   background:
@@ -3083,39 +3636,42 @@ tr:last-child td{
 
 .admin-stars{
   color:#ffd21f;
+
   font-size:18px;
 }
 
 .review-message{
   max-width:400px;
+
   line-height:1.5;
+
   color:#9eacd0;
 }
 
 .review-enabled{
   display:inline-block;
 
-  padding:6px 10px;
+  padding:
+    6px 10px;
 
   border-radius:999px;
 
   font-size:11px;
+
   font-weight:900;
 }
 
 .review-enabled.yes{
   color:#65e99a;
+
   background:#103923;
 }
 
 .review-enabled.no{
   color:#ff7d87;
+
   background:#42191d;
 }
-
-/* =====================================================
-   MOBILE
-===================================================== */
 
 @media(max-width:1100px){
 
@@ -3163,8 +3719,7 @@ tr:last-child td{
 
   .container{
     padding:
-      22px
-      12px
+      22px 12px
       50px;
   }
 
@@ -3393,7 +3948,9 @@ Show 1 Day Free Trial
 
 </div>
 
-<button class="primary">
+<button
+  class="primary"
+>
 Save Website Settings
 </button>
 
@@ -3519,7 +4076,9 @@ Description
 
 </div>
 
-<button class="add">
+<button
+  class="add"
+>
 + Add Plan
 </button>
 
@@ -3537,9 +4096,15 @@ Description
 ⭐ Customer Feedback
 </h2>
 
-<p style="color:#8e9dbd;margin-top:-10px">
-Add customer reviews here. Enabled reviews will appear
-automatically below the Vexora logo on the homepage.
+<p
+  style="
+    color:#8e9dbd;
+    margin-top:-10px
+  "
+>
+Add customer reviews here.
+Enabled reviews will appear automatically
+in the middle of the homepage before Membership.
 </p>
 
 <form
@@ -3630,7 +4195,9 @@ Customer Photo
 
 </div>
 
-<button class="add">
+<button
+  class="add"
+>
 + Add Feedback
 </button>
 
@@ -3786,7 +4353,8 @@ No payment submissions yet.
 
 function updateTimers(){
 
-  let reload = false;
+  let reload =
+    false;
 
   document
     .querySelectorAll(
@@ -3804,54 +4372,58 @@ function updateTimers(){
           Math.max(
             0,
             expiry -
-            Date.now()
+              Date.now()
           );
 
         const seconds =
           Math.ceil(
             remaining /
-            1000
+              1000
           );
 
         const minutes =
           Math.floor(
             seconds /
-            60
+              60
           );
 
         const sec =
-          seconds % 60;
+          seconds %
+          60;
 
         el.textContent =
-          String(minutes)
-            .padStart(
-              2,
-              "0"
-            ) +
+          String(
+            minutes
+          ).padStart(
+            2,
+            "0"
+          ) +
           ":" +
-          String(sec)
-            .padStart(
-              2,
-              "0"
-            );
+          String(
+            sec
+          ).padStart(
+            2,
+            "0"
+          );
 
         if(
-          remaining <= 0
+          remaining <=
+          0
         ){
 
-          reload = true;
-
+          reload =
+            true;
         }
 
       }
     );
 
-  if(reload){
+  if(
+    reload
+  ){
 
     location.reload();
-
   }
-
 }
 
 updateTimers();
@@ -3867,8 +4439,7 @@ setInterval(
 
 </html>
 
-    `);
-
+`);
   }
 );
 
@@ -3886,24 +4457,30 @@ app.post(
 
     settings.telegram =
       String(
-        req.body.telegram || ""
+        req.body.telegram ||
+          ""
       ).trim();
 
     settings.contactNumber =
       String(
-        req.body.contactNumber || ""
+        req.body.contactNumber ||
+          ""
       ).trim();
 
     settings.upiId =
       String(
-        req.body.upiId || ""
+        req.body.upiId ||
+          ""
       ).trim();
 
     settings.freeTrialEnabled =
-      req.body.freeTrialEnabled ===
+      req.body
+        .freeTrialEnabled ===
       "1";
 
-    if(req.file){
+    if(
+      req.file
+    ){
 
       settings.qrImage =
         "/uploads/" +
@@ -3911,7 +4488,6 @@ app.post(
 
       settings.paymentQrs.upi =
         settings.qrImage;
-
     }
 
     saveSettings(
@@ -3921,7 +4497,6 @@ app.post(
     res.redirect(
       "/admin"
     );
-
   }
 );
 
@@ -3938,28 +4513,32 @@ app.post(
 
     const name =
       String(
-        req.body.name || ""
+        req.body.name ||
+          ""
       ).trim();
 
     const amount =
       Math.max(
         0,
         Number(
-          req.body.amount || 0
+          req.body.amount ||
+            0
         )
       );
 
     const description =
       String(
-        req.body.description || ""
+        req.body.description ||
+          ""
       ).trim();
 
-    if(!name){
+    if(
+      !name
+    ){
 
       return res.redirect(
         "/admin"
       );
-
     }
 
     let id =
@@ -3974,23 +4553,26 @@ app.post(
           ""
         );
 
-    if(!id){
+    if(
+      !id
+    ){
 
       id =
         "plan-" +
         Date.now();
-
     }
 
     const originalId =
       id;
 
-    let counter = 2;
+    let counter =
+      2;
 
     while(
       settings.plans.some(
         p =>
-          p.id === id
+          p.id ===
+          id
       )
     ){
 
@@ -4000,16 +4582,13 @@ app.post(
         counter;
 
       counter++;
-
     }
 
     settings.plans.push({
-
       id,
       name,
       amount,
       description
-
     });
 
     saveSettings(
@@ -4019,7 +4598,6 @@ app.post(
     res.redirect(
       "/admin"
     );
-
   }
 );
 
@@ -4041,19 +4619,21 @@ app.post(
           req.params.id
       );
 
-    if(plan){
+    if(
+      plan
+    ){
 
       const name =
         String(
           req.body.planName ||
-          ""
+            ""
         ).trim();
 
-      if(name){
-
+      if(
+        name
+      ){
         plan.name =
           name;
-
       }
 
       plan.amount =
@@ -4061,26 +4641,25 @@ app.post(
           0,
           Number(
             req.body.planAmount ||
-            0
+              0
           )
         );
 
       plan.description =
         String(
-          req.body.planDescription ||
-          ""
+          req.body
+            .planDescription ||
+            ""
         ).trim();
 
       saveSettings(
         settings
       );
-
     }
 
     res.redirect(
       "/admin"
     );
-
   }
 );
 
@@ -4109,7 +4688,6 @@ app.post(
     res.redirect(
       "/admin"
     );
-
   }
 );
 
@@ -4124,12 +4702,14 @@ app.post(
 
     const name =
       String(
-        req.body.name || ""
+        req.body.name ||
+          ""
       ).trim();
 
     const message =
       String(
-        req.body.message || ""
+        req.body.message ||
+          ""
       ).trim();
 
     const rating =
@@ -4138,7 +4718,8 @@ app.post(
         Math.max(
           1,
           Number(
-            req.body.rating || 5
+            req.body.rating ||
+              5
           )
         )
       );
@@ -4151,7 +4732,6 @@ app.post(
       return res.redirect(
         "/admin"
       );
-
     }
 
     const review = {
@@ -4161,7 +4741,7 @@ app.post(
         "-" +
         Math.random()
           .toString(36)
-          .slice(2,8),
+          .slice(2, 8),
 
       name,
 
@@ -4180,7 +4760,6 @@ app.post(
 
       createdAt:
         new Date().toISOString()
-
     };
 
     const reviews =
@@ -4197,7 +4776,6 @@ app.post(
     res.redirect(
       "/admin"
     );
-
   }
 );
 
@@ -4219,21 +4797,22 @@ app.post(
           req.params.id
       );
 
-    if(review){
+    if(
+      review
+    ){
 
       review.enabled =
-        review.enabled === false;
+        review.enabled ===
+        false;
 
       saveReviews(
         reviews
       );
-
     }
 
     res.redirect(
       "/admin"
     );
-
   }
 );
 
@@ -4267,8 +4846,8 @@ app.post(
     );
 
     /*
-      Delete uploaded customer photo
-      when feedback is deleted.
+      Customer photo bhi delete
+      karenge.
     */
 
     if(
@@ -4281,12 +4860,11 @@ app.post(
 
       const photoPath =
         path.join(
-          publicDir,
-          review.photo
-            .replace(
-              /^\/+/,
-              ""
-            )
+          uploadDir,
+          review.photo.replace(
+            /^\/uploads\//,
+            ""
+          )
         );
 
       try{
@@ -4300,7 +4878,6 @@ app.post(
           fs.unlinkSync(
             photoPath
           );
-
         }
 
       }catch(error){
@@ -4309,15 +4886,12 @@ app.post(
           "Review photo delete error:",
           error
         );
-
       }
-
     }
 
     res.redirect(
       "/admin"
     );
-
   }
 );
 
@@ -4342,8 +4916,10 @@ app.post(
     if(
       payment &&
       payment.status ===
-      "Pending" &&
-      !isExpired(payment)
+        "Pending" &&
+      !isExpired(
+        payment
+      )
     ){
 
       payment.status =
@@ -4355,13 +4931,11 @@ app.post(
       savePayments(
         payments
       );
-
     }
 
     res.redirect(
       "/admin"
     );
-
   }
 );
 
@@ -4386,8 +4960,10 @@ app.post(
     if(
       payment &&
       payment.status ===
-      "Pending" &&
-      !isExpired(payment)
+        "Pending" &&
+      !isExpired(
+        payment
+      )
     ){
 
       payment.status =
@@ -4399,13 +4975,49 @@ app.post(
       savePayments(
         payments
       );
-
     }
 
     res.redirect(
       "/admin"
     );
+  }
+);
 
+// ======================================================
+// ERROR HANDLER
+// ======================================================
+
+app.use(
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
+
+    console.error(
+      "Server error:",
+      error
+    );
+
+    if(
+      error &&
+      error.code ===
+        "LIMIT_FILE_SIZE"
+    ){
+
+      return res
+        .status(400)
+        .send(
+          "File too large. Maximum size is 10MB."
+        );
+    }
+
+    res
+      .status(500)
+      .send(
+        "Something went wrong."
+      );
   }
 );
 
@@ -4418,8 +5030,23 @@ app.listen(
   () => {
 
     console.log(
+      "===================================="
+    );
+
+    console.log(
       `Vexora running on port ${PORT}`
     );
 
+    console.log(
+      `Persistent data directory: ${DATA_DIR}`
+    );
+
+    console.log(
+      `Persistent upload directory: ${uploadDir}`
+    );
+
+    console.log(
+      "===================================="
+    );
   }
 );
