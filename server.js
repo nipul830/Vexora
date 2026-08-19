@@ -79,12 +79,29 @@ const settingsFile = path.join(
   "settings.json"
 );
 
+const feedbackFile = path.join(
+  dataDir,
+  "feedback.json"
+);
+
 fs.mkdirSync(uploadDir, { recursive: true });
 fs.mkdirSync(dataDir, { recursive: true });
+
+// ======================================================
+// DATA FILES
+// ======================================================
 
 if (!fs.existsSync(paymentsFile)) {
   fs.writeFileSync(
     paymentsFile,
+    "[]",
+    "utf8"
+  );
+}
+
+if (!fs.existsSync(feedbackFile)) {
+  fs.writeFileSync(
+    feedbackFile,
     "[]",
     "utf8"
   );
@@ -307,6 +324,50 @@ function savePayments(payments) {
   );
 }
 
+// ======================================================
+// FEEDBACK HELPERS
+// ======================================================
+
+function getFeedback() {
+
+  try {
+
+    const data =
+      fs.readFileSync(
+        feedbackFile,
+        "utf8"
+      );
+
+    if (!data.trim()) {
+      return [];
+    }
+
+    return JSON.parse(data);
+
+  } catch (error) {
+
+    console.error(
+      "Feedback read error:",
+      error
+    );
+
+    return [];
+  }
+}
+
+function saveFeedback(feedback) {
+
+  fs.writeFileSync(
+    feedbackFile,
+    JSON.stringify(
+      feedback,
+      null,
+      2
+    ),
+    "utf8"
+  );
+}
+
 function escapeHTML(value) {
 
   if (
@@ -375,8 +436,7 @@ function updateExpiredPayments() {
   payments.forEach(payment => {
 
     if (
-      payment.status ===
-      "Pending" &&
+      payment.status === "Pending" &&
       getRemainingMs(payment) <= 0
     ) {
 
@@ -489,9 +549,19 @@ app.get("/plans", (req, res) => {
     settings.freeTrialEnabled
       ? `
         <div class="plan free">
-          <div class="tag">FREE TRIAL</div>
-          <h2>1 Day Free</h2>
-          <div class="price">FREE</div>
+
+          <div class="tag">
+            FREE TRIAL
+          </div>
+
+          <h2>
+            1 Day Free
+          </h2>
+
+          <div class="price">
+            FREE
+          </div>
+
           <p>
             Try Vexora premium access
             for 1 day.
@@ -507,6 +577,7 @@ app.get("/plans", (req, res) => {
           >
             Get Free Trial
           </a>
+
         </div>
       `
       : "";
@@ -554,6 +625,7 @@ app.get("/plans", (req, res) => {
   res.send(`
 <!doctype html>
 <html lang="en">
+
 <head>
 
 <meta charset="utf-8">
@@ -688,6 +760,7 @@ body{
   border-radius:14px;
   color:white;
   font-weight:800;
+  text-decoration:none;
   background:
     linear-gradient(
       90deg,
@@ -701,6 +774,7 @@ body{
 }
 
 @media(max-width:650px){
+
   .plans{
     grid-template-columns:1fr;
   }
@@ -708,6 +782,7 @@ body{
   .hero h1{
     font-size:38px;
   }
+
 }
 
 </style>
@@ -717,26 +792,33 @@ body{
 <body>
 
 <header class="topbar">
-  <div class="logo">
-    V<span>exora</span>
-  </div>
+
+<div class="logo">
+V<span>exora</span>
+</div>
+
 </header>
 
 <main class="container">
 
 <section class="hero">
-  <h1>
-    Choose Your Plan
-  </h1>
 
-  <p>
-    Select your Vexora premium membership.
-  </p>
+<h1>
+Choose Your Plan
+</h1>
+
+<p>
+Select your Vexora premium membership.
+</p>
+
 </section>
 
 <section class="plans">
-  ${freeTrial}
-  ${cards}
+
+${freeTrial}
+
+${cards}
+
 </section>
 
 </main>
@@ -774,6 +856,32 @@ app.get(
       getSettings();
 
     res.json(settings);
+
+  }
+);
+
+// ======================================================
+// CUSTOMER FEEDBACK API
+// ======================================================
+
+app.get(
+  "/api/feedback",
+  (req, res) => {
+
+    const feedback =
+      getFeedback()
+        .filter(
+          item =>
+            item &&
+            item.active !== false
+        )
+        .sort(
+          (a, b) =>
+            Number(b.createdAt || 0) -
+            Number(a.createdAt || 0)
+        );
+
+    res.json(feedback);
 
   }
 );
@@ -860,6 +968,7 @@ app.post(
 
     res.send(`
 <!doctype html>
+
 <html lang="en">
 
 <head>
@@ -1033,7 +1142,9 @@ h1{
 
 <div class="card">
 
-<div class="icon">✓</div>
+<div class="icon">
+✓
+</div>
 
 <h1>
 Payment Request Submitted
@@ -1282,6 +1393,7 @@ setInterval(
 </script>
 
 </body>
+
 </html>
     `);
 
@@ -1348,6 +1460,13 @@ app.get(
     const settings =
       getSettings();
 
+    const feedback =
+      getFeedback();
+
+    // ==================================================
+    // PAYMENT ROWS
+    // ==================================================
+
     const rows =
       payments.map(payment => {
 
@@ -1369,6 +1488,7 @@ app.get(
 
           action = `
           <div class="timer">
+
             <span
               class="countdown"
               data-expiry="${escapeHTML(
@@ -1379,6 +1499,7 @@ app.get(
                 getRemainingMs(payment)
               )}
             </span>
+
           </div>
 
           <div class="actions">
@@ -1389,9 +1510,11 @@ app.get(
                 payment.id
               )}/approve"
             >
+
               <button class="approve">
                 ✓ Approve
               </button>
+
             </form>
 
             <form
@@ -1400,9 +1523,11 @@ app.get(
                 payment.id
               )}/reject"
             >
+
               <button class="reject">
                 ✕ Reject
               </button>
+
             </form>
 
           </div>
@@ -1414,6 +1539,7 @@ app.get(
 
           action = `
             <div class="manual">
+
               <strong>
                 Manual Review
               </strong>
@@ -1426,6 +1552,7 @@ app.get(
               >
                 Telegram
               </a>
+
             </div>
           `;
 
@@ -1440,6 +1567,7 @@ app.get(
               }
             </span>
           `;
+
         }
 
         const proof =
@@ -1516,7 +1644,12 @@ app.get(
 
 </tr>
         `;
+
       }).join("");
+
+    // ==================================================
+    // STATS
+    // ==================================================
 
     const total =
       payments.length;
@@ -1541,11 +1674,17 @@ app.get(
         p => p.status === "Expired"
       ).length;
 
+    // ==================================================
+    // PLAN ROWS
+    // ==================================================
+
     const planRows =
       settings.plans.map(plan => `
+
 <tr>
 
 <td>
+
 <input
   class="input"
   type="text"
@@ -1554,9 +1693,11 @@ app.get(
   value="${escapeHTML(plan.name)}"
   required
 >
+
 </td>
 
 <td>
+
 <input
   class="input small"
   type="number"
@@ -1566,9 +1707,11 @@ app.get(
   min="0"
   required
 >
+
 </td>
 
 <td>
+
 <input
   class="input"
   type="text"
@@ -1578,6 +1721,7 @@ app.get(
     plan.description
   )}"
 >
+
 </td>
 
 <td>
@@ -1617,10 +1761,153 @@ Delete
 </td>
 
 </tr>
+
       `).join("");
 
+    // ==================================================
+    // FEEDBACK ROWS
+    // ==================================================
+
+    const feedbackRows =
+      feedback.map(item => {
+
+        const rating =
+          Math.min(
+            5,
+            Math.max(
+              1,
+              Number(item.rating || 5)
+            )
+          );
+
+        const stars =
+          "⭐".repeat(rating);
+
+        const photo =
+          item.photo
+            ? `
+              <img
+                src="${escapeHTML(
+                  item.photo
+                )}"
+                class="feedback-photo"
+              >
+            `
+            : `
+              <div class="feedback-avatar">
+                ${escapeHTML(
+                  String(
+                    item.name || "?"
+                  )
+                    .charAt(0)
+                    .toUpperCase()
+                )}
+              </div>
+            `;
+
+        return `
+<tr>
+
+<td>
+  ${photo}
+</td>
+
+<td>
+  <strong>
+    ${escapeHTML(item.name)}
+  </strong>
+</td>
+
+<td class="feedback-message">
+  ${escapeHTML(item.message)}
+</td>
+
+<td>
+  <span class="stars">
+    ${stars}
+  </span>
+</td>
+
+<td>
+
+<span
+  class="status ${
+    item.active === false
+      ? "rejected"
+      : "approved"
+  }"
+>
+
+${
+  item.active === false
+    ? "Hidden"
+    : "Visible"
+}
+
+</span>
+
+</td>
+
+<td>
+
+<div class="plan-actions">
+
+<form
+  method="POST"
+  action="/admin/feedback/${encodeURIComponent(
+    item.id
+  )}/toggle"
+>
+
+<button
+  class="${
+    item.active === false
+      ? "save"
+      : "delete"
+  }"
+>
+
+${
+  item.active === false
+    ? "Show"
+    : "Hide"
+}
+
+</button>
+
+</form>
+
+<form
+  method="POST"
+  action="/admin/feedback/${encodeURIComponent(
+    item.id
+  )}/delete"
+  onsubmit="
+    return confirm(
+      'Delete this feedback?'
+    )
+  "
+>
+
+<button class="delete">
+Delete
+</button>
+
+</form>
+
+</div>
+
+</td>
+
+</tr>
+        `;
+
+      }).join("");
+
     res.send(`
+
 <!doctype html>
+
 <html lang="en">
 
 <head>
@@ -1632,7 +1919,9 @@ Delete
   content="width=device-width,initial-scale=1"
 >
 
-<title>Vexora Admin Dashboard</title>
+<title>
+Vexora Admin Dashboard
+</title>
 
 <style>
 
@@ -2026,11 +2315,64 @@ tr:last-child td{
   color:#8190b0;
 }
 
+.feedback-photo{
+  width:50px;
+  height:50px;
+  object-fit:cover;
+  border-radius:50%;
+  border:2px solid #714cff;
+}
+
+.feedback-avatar{
+  width:50px;
+  height:50px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#18274a;
+  color:#a879ff;
+  font-weight:900;
+  font-size:20px;
+}
+
+.feedback-message{
+  max-width:420px;
+  line-height:1.5;
+}
+
+.stars{
+  white-space:nowrap;
+}
+
+.feedback-form{
+  display:grid;
+  grid-template-columns:
+    1fr 1fr 120px 1fr auto;
+  gap:10px;
+  align-items:end;
+  margin-bottom:25px;
+}
+
+.feedback-form label{
+  display:block;
+  margin-bottom:7px;
+  color:#aebce0;
+  font-size:12px;
+}
+
 @media(max-width:1000px){
+
   .stats{
     grid-template-columns:
       repeat(3,1fr);
   }
+
+  .feedback-form{
+    grid-template-columns:
+      1fr 1fr;
+  }
+
 }
 
 @media(max-width:750px){
@@ -2050,6 +2392,10 @@ tr:last-child td{
   .stats{
     grid-template-columns:
       repeat(2,1fr);
+  }
+
+  .feedback-form{
+    grid-template-columns:1fr;
   }
 
 }
@@ -2097,43 +2443,67 @@ Payment Dashboard
 </h1>
 
 <p>
-Payments, plans and website controls.
+Payments, plans, feedback and website controls.
 </p>
 
 </section>
 
-<!-- ================= STATS ================= -->
+<!-- ==================================================
+     STATS
+================================================== -->
 
 <section class="stats">
 
 <div class="stat">
-<span class="stat-number">${total}</span>
-<span class="stat-label">Total Payments</span>
+<span class="stat-number">
+${total}
+</span>
+<span class="stat-label">
+Total Payments
+</span>
 </div>
 
 <div class="stat">
-<span class="stat-number">${pending}</span>
-<span class="stat-label">Pending</span>
+<span class="stat-number">
+${pending}
+</span>
+<span class="stat-label">
+Pending
+</span>
 </div>
 
 <div class="stat">
-<span class="stat-number">${approved}</span>
-<span class="stat-label">Approved</span>
+<span class="stat-number">
+${approved}
+</span>
+<span class="stat-label">
+Approved
+</span>
 </div>
 
 <div class="stat">
-<span class="stat-number">${rejected}</span>
-<span class="stat-label">Rejected</span>
+<span class="stat-number">
+${rejected}
+</span>
+<span class="stat-label">
+Rejected
+</span>
 </div>
 
 <div class="stat">
-<span class="stat-number">${expired}</span>
-<span class="stat-label">Expired</span>
+<span class="stat-number">
+${expired}
+</span>
+<span class="stat-label">
+Expired
+</span>
 </div>
 
 </section>
 
-<!-- ================= WEBSITE SETTINGS ================= -->
+<!-- ==================================================
+     WEBSITE SETTINGS
+================================================== -->
 
 <section class="panel">
 
@@ -2151,7 +2521,9 @@ Payments, plans and website controls.
 
 <div class="group">
 
-<label>Telegram Link</label>
+<label>
+Telegram Link
+</label>
 
 <input
   class="input"
@@ -2166,7 +2538,9 @@ Payments, plans and website controls.
 
 <div class="group">
 
-<label>Contact Number</label>
+<label>
+Contact Number
+</label>
 
 <input
   class="input"
@@ -2181,7 +2555,9 @@ Payments, plans and website controls.
 
 <div class="group">
 
-<label>UPI ID</label>
+<label>
+UPI ID
+</label>
 
 <input
   class="input"
@@ -2196,7 +2572,9 @@ Payments, plans and website controls.
 
 <div class="group">
 
-<label>UPI QR Upload</label>
+<label>
+UPI QR Upload
+</label>
 
 <input
   class="input"
@@ -2209,7 +2587,9 @@ Payments, plans and website controls.
 
 <div class="group full">
 
-<label>Free Trial</label>
+<label>
+Free Trial
+</label>
 
 <div class="checkbox">
 
@@ -2242,7 +2622,9 @@ Save Website Settings
 
 </section>
 
-<!-- ================= PLAN MANAGER ================= -->
+<!-- ==================================================
+     PLAN MANAGER
+================================================== -->
 
 <section class="panel">
 
@@ -2255,12 +2637,14 @@ Save Website Settings
 <table style="min-width:900px">
 
 <thead>
+
 <tr>
 <th>Plan</th>
 <th>Amount</th>
 <th>Description</th>
 <th>Action</th>
 </tr>
+
 </thead>
 
 <tbody>
@@ -2297,7 +2681,9 @@ Add New Plan
 
 <div>
 
-<label>Plan Name</label>
+<label>
+Plan Name
+</label>
 
 <input
   class="input"
@@ -2310,7 +2696,9 @@ Add New Plan
 
 <div>
 
-<label>Amount</label>
+<label>
+Amount
+</label>
 
 <input
   class="input"
@@ -2325,7 +2713,9 @@ Add New Plan
 
 <div>
 
-<label>Description</label>
+<label>
+Description
+</label>
 
 <input
   class="input"
@@ -2343,7 +2733,161 @@ Add New Plan
 
 </section>
 
-<!-- ================= PAYMENT DASHBOARD ================= -->
+<!-- ==================================================
+     CUSTOMER FEEDBACK
+================================================== -->
+
+<section class="panel">
+
+<h2>
+💬 Customer Feedback
+</h2>
+
+<form
+  class="feedback-form"
+  method="POST"
+  action="/admin/feedback/add"
+  enctype="multipart/form-data"
+>
+
+<div>
+
+<label>
+Customer Name
+</label>
+
+<input
+  class="input"
+  type="text"
+  name="name"
+  placeholder="Customer name"
+  required
+>
+
+</div>
+
+<div>
+
+<label>
+Feedback Message
+</label>
+
+<input
+  class="input"
+  type="text"
+  name="message"
+  placeholder="Amazing indicator!"
+  required
+>
+
+</div>
+
+<div>
+
+<label>
+Rating
+</label>
+
+<input
+  class="input"
+  type="number"
+  name="rating"
+  min="1"
+  max="5"
+  value="5"
+>
+
+</div>
+
+<div>
+
+<label>
+Customer Photo
+</label>
+
+<input
+  class="input"
+  type="file"
+  name="photo"
+  accept="image/*"
+>
+
+</div>
+
+<button
+  class="add"
+  type="submit"
+>
++ Add
+</button>
+
+</form>
+
+<div class="table-wrap">
+
+<table style="min-width:950px">
+
+<thead>
+
+<tr>
+
+<th>
+Photo
+</th>
+
+<th>
+Name
+</th>
+
+<th>
+Feedback
+</th>
+
+<th>
+Rating
+</th>
+
+<th>
+Status
+</th>
+
+<th>
+Action
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+${
+  feedbackRows ||
+  `
+<tr>
+
+<td
+  colspan="6"
+  class="empty"
+>
+No customer feedback yet.
+</td>
+
+</tr>
+`
+}
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+<!-- ==================================================
+     PAYMENT DASHBOARD
+================================================== -->
 
 <section class="panel">
 
@@ -2358,15 +2902,43 @@ Add New Plan
 <thead>
 
 <tr>
-<th>Plan</th>
-<th>Amount</th>
-<th>UTR</th>
-<th>TradingView</th>
-<th>Telegram</th>
-<th>Proof</th>
-<th>Status</th>
-<th>Date</th>
-<th>Action</th>
+
+<th>
+Plan
+</th>
+
+<th>
+Amount
+</th>
+
+<th>
+UTR
+</th>
+
+<th>
+TradingView
+</th>
+
+<th>
+Telegram
+</th>
+
+<th>
+Proof
+</th>
+
+<th>
+Status
+</th>
+
+<th>
+Date
+</th>
+
+<th>
+Action
+</th>
+
 </tr>
 
 </thead>
@@ -2377,12 +2949,14 @@ ${
   rows ||
   `
 <tr>
+
 <td
   colspan="9"
   class="empty"
 >
 No payment submissions yet.
 </td>
+
 </tr>
 `
 }
@@ -2461,6 +3035,7 @@ setInterval(
 </script>
 
 </body>
+
 </html>
     `);
 
@@ -2571,7 +3146,9 @@ app.post(
         Date.now();
     }
 
-    const originalId = id;
+    const originalId =
+      id;
+
     let counter = 2;
 
     while(
@@ -2590,10 +3167,15 @@ app.post(
     }
 
     settings.plans.push({
+
       id,
+
       name,
+
       amount,
+
       description
+
     });
 
     saveSettings(
@@ -2686,7 +3268,220 @@ app.post(
 );
 
 // ======================================================
-// APPROVE
+// ADD FEEDBACK
+// ======================================================
+
+app.post(
+  "/admin/feedback/add",
+  upload.single("photo"),
+  (req, res) => {
+
+    const name =
+      String(
+        req.body.name || ""
+      ).trim();
+
+    const message =
+      String(
+        req.body.message || ""
+      ).trim();
+
+    const rating =
+      Math.min(
+        5,
+        Math.max(
+          1,
+          Number(
+            req.body.rating || 5
+          )
+        )
+      );
+
+    if(!name || !message){
+      return res.redirect(
+        "/admin"
+      );
+    }
+
+    const feedback =
+      getFeedback();
+
+    feedback.unshift({
+
+      id:
+        Date.now() +
+        "-" +
+        Math.random()
+          .toString(36)
+          .slice(2, 8),
+
+      name,
+
+      message,
+
+      rating,
+
+      photo:
+        req.file
+          ? "/uploads/" +
+            req.file.filename
+          : "",
+
+      active:
+        true,
+
+      createdAt:
+        Date.now()
+
+    });
+
+    saveFeedback(
+      feedback
+    );
+
+    res.redirect("/admin");
+
+  }
+);
+
+// ======================================================
+// DELETE FEEDBACK
+// ======================================================
+
+app.post(
+  "/admin/feedback/:id/delete",
+  (req, res) => {
+
+    const feedback =
+      getFeedback();
+
+    const updated =
+      feedback.filter(
+        item =>
+          item.id !==
+          req.params.id
+      );
+
+    saveFeedback(
+      updated
+    );
+
+    res.redirect("/admin");
+
+  }
+);
+
+// ======================================================
+// SHOW / HIDE FEEDBACK
+// ======================================================
+
+app.post(
+  "/admin/feedback/:id/toggle",
+  (req, res) => {
+
+    const feedback =
+      getFeedback();
+
+    const item =
+      feedback.find(
+        f =>
+          f.id ===
+          req.params.id
+      );
+
+    if(item){
+
+      item.active =
+        item.active === false;
+
+      saveFeedback(
+        feedback
+      );
+
+    }
+
+    res.redirect("/admin");
+
+  }
+);
+
+// ======================================================
+// EDIT FEEDBACK
+// ======================================================
+
+app.post(
+  "/admin/feedback/:id/edit",
+  upload.single("photo"),
+  (req, res) => {
+
+    const feedback =
+      getFeedback();
+
+    const item =
+      feedback.find(
+        f =>
+          f.id ===
+          req.params.id
+      );
+
+    if(!item){
+      return res.redirect(
+        "/admin"
+      );
+    }
+
+    const name =
+      String(
+        req.body.name || ""
+      ).trim();
+
+    const message =
+      String(
+        req.body.message || ""
+      ).trim();
+
+    const rating =
+      Math.min(
+        5,
+        Math.max(
+          1,
+          Number(
+            req.body.rating || 5
+          )
+        )
+      );
+
+    if(name){
+      item.name = name;
+    }
+
+    if(message){
+      item.message =
+        message;
+    }
+
+    item.rating =
+      rating;
+
+    if(req.file){
+
+      item.photo =
+        "/uploads/" +
+        req.file.filename;
+
+    }
+
+    saveFeedback(
+      feedback
+    );
+
+    res.redirect("/admin");
+
+  }
+);
+
+// ======================================================
+// APPROVE PAYMENT
 // ======================================================
 
 app.post(
@@ -2727,7 +3522,7 @@ app.post(
 );
 
 // ======================================================
-// REJECT
+// REJECT PAYMENT
 // ======================================================
 
 app.post(
