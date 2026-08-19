@@ -12,6 +12,10 @@ const PORT = process.env.PORT || 10000;
 
 const REVIEW_TIME_MS = 15 * 60 * 1000;
 
+// ======================================================
+// DEFAULT SETTINGS
+// ======================================================
+
 const DEFAULT_SETTINGS = {
   telegram: "https://t.me/Jkhub_premium",
   contactNumber: "6371406885",
@@ -84,27 +88,42 @@ const feedbackFile = path.join(
   "feedback.json"
 );
 
-fs.mkdirSync(uploadDir, { recursive: true });
-fs.mkdirSync(dataDir, { recursive: true });
+fs.mkdirSync(
+  uploadDir,
+  {
+    recursive: true
+  }
+);
+
+fs.mkdirSync(
+  dataDir,
+  {
+    recursive: true
+  }
+);
 
 // ======================================================
-// DATA FILES
+// CREATE DATA FILES
 // ======================================================
 
 if (!fs.existsSync(paymentsFile)) {
+
   fs.writeFileSync(
     paymentsFile,
     "[]",
     "utf8"
   );
+
 }
 
 if (!fs.existsSync(feedbackFile)) {
+
   fs.writeFileSync(
     feedbackFile,
     "[]",
     "utf8"
   );
+
 }
 
 // ======================================================
@@ -117,7 +136,9 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(
+  express.json()
+);
 
 app.use(
   express.static(publicDir)
@@ -128,14 +149,62 @@ app.use(
 // ======================================================
 
 function cloneDefaults() {
+
   return JSON.parse(
-    JSON.stringify(DEFAULT_SETTINGS)
+    JSON.stringify(
+      DEFAULT_SETTINGS
+    )
   );
+
 }
+
+// ======================================================
+// ESCAPE HTML
+// ======================================================
+
+function escapeHTML(value) {
+
+  if (
+    value === undefined ||
+    value === null
+  ) {
+
+    return "";
+
+  }
+
+  return String(value)
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+// ======================================================
+// SETTINGS
+// ======================================================
 
 function normalizeSettings(input) {
 
-  const defaults = cloneDefaults();
+  const defaults =
+    cloneDefaults();
 
   const settings = {
     ...defaults,
@@ -177,9 +246,15 @@ function normalizeSettings(input) {
     ...(settings.paymentAddresses || {})
   };
 
-  if (!Array.isArray(settings.plans)) {
+  if (
+    !Array.isArray(
+      settings.plans
+    )
+  ) {
+
     settings.plans =
       defaults.plans;
+
   }
 
   settings.plans =
@@ -191,9 +266,21 @@ function normalizeSettings(input) {
       )
       .map(
         p => ({
-          id: String(p.id || ""),
-          name: String(p.name || ""),
-          amount: Number(p.amount || 0),
+          id:
+            String(
+              p.id || ""
+            ),
+
+          name:
+            String(
+              p.name || ""
+            ),
+
+          amount:
+            Number(
+              p.amount || 0
+            ),
+
           description:
             String(
               p.description || ""
@@ -207,6 +294,7 @@ function normalizeSettings(input) {
       );
 
   return settings;
+
 }
 
 function getSettings() {
@@ -233,6 +321,7 @@ function getSettings() {
       );
 
       return defaults;
+
     }
 
     const data =
@@ -241,8 +330,12 @@ function getSettings() {
         "utf8"
       );
 
-    if (!data.trim()) {
+    if (
+      !data.trim()
+    ) {
+
       return cloneDefaults();
+
     }
 
     return normalizeSettings(
@@ -257,7 +350,9 @@ function getSettings() {
     );
 
     return cloneDefaults();
+
   }
+
 }
 
 function saveSettings(settings) {
@@ -278,11 +373,16 @@ function saveSettings(settings) {
   );
 
   return clean;
+
 }
 
 saveSettings(
   getSettings()
 );
+
+// ======================================================
+// PAYMENTS
+// ======================================================
 
 function getPayments() {
 
@@ -294,11 +394,22 @@ function getPayments() {
         "utf8"
       );
 
-    if (!data.trim()) {
+    if (
+      !data.trim()
+    ) {
+
       return [];
+
     }
 
-    return JSON.parse(data);
+    const payments =
+      JSON.parse(data);
+
+    return Array.isArray(
+      payments
+    )
+      ? payments
+      : [];
 
   } catch (error) {
 
@@ -308,10 +419,14 @@ function getPayments() {
     );
 
     return [];
+
   }
+
 }
 
-function savePayments(payments) {
+function savePayments(
+  payments
+) {
 
   fs.writeFileSync(
     paymentsFile,
@@ -322,15 +437,32 @@ function savePayments(payments) {
     ),
     "utf8"
   );
+
 }
 
 // ======================================================
-// FEEDBACK HELPERS
+// CUSTOMER FEEDBACK
 // ======================================================
 
 function getFeedback() {
 
   try {
+
+    if (
+      !fs.existsSync(
+        feedbackFile
+      )
+    ) {
+
+      fs.writeFileSync(
+        feedbackFile,
+        "[]",
+        "utf8"
+      );
+
+      return [];
+
+    }
 
     const data =
       fs.readFileSync(
@@ -338,11 +470,22 @@ function getFeedback() {
         "utf8"
       );
 
-    if (!data.trim()) {
+    if (
+      !data.trim()
+    ) {
+
       return [];
+
     }
 
-    return JSON.parse(data);
+    const feedback =
+      JSON.parse(data);
+
+    return Array.isArray(
+      feedback
+    )
+      ? feedback
+      : [];
 
   } catch (error) {
 
@@ -352,10 +495,14 @@ function getFeedback() {
     );
 
     return [];
+
   }
+
 }
 
-function saveFeedback(feedback) {
+function saveFeedback(
+  feedback
+) {
 
   fs.writeFileSync(
     feedbackFile,
@@ -366,30 +513,16 @@ function saveFeedback(feedback) {
     ),
     "utf8"
   );
-}
 
-function escapeHTML(value) {
-
-  if (
-    value === undefined ||
-    value === null
-  ) {
-    return "";
-  }
-
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
 
 // ======================================================
 // PAYMENT TIMER
 // ======================================================
 
-function getCreatedTime(payment) {
+function getCreatedTime(
+  payment
+) {
 
   const time =
     new Date(
@@ -399,31 +532,41 @@ function getCreatedTime(payment) {
   return Number.isNaN(time)
     ? Date.now()
     : time;
+
 }
 
-function getExpiryTime(payment) {
+function getExpiryTime(
+  payment
+) {
 
   return (
     getCreatedTime(payment) +
     REVIEW_TIME_MS
   );
+
 }
 
-function getRemainingMs(payment) {
+function getRemainingMs(
+  payment
+) {
 
   return Math.max(
     0,
     getExpiryTime(payment) -
     Date.now()
   );
+
 }
 
-function isExpired(payment) {
+function isExpired(
+  payment
+) {
 
   return (
     payment.status === "Pending" &&
     getRemainingMs(payment) <= 0
   );
+
 }
 
 function updateExpiredPayments() {
@@ -433,50 +576,67 @@ function updateExpiredPayments() {
 
   let changed = false;
 
-  payments.forEach(payment => {
+  payments.forEach(
+    payment => {
 
-    if (
-      payment.status === "Pending" &&
-      getRemainingMs(payment) <= 0
-    ) {
+      if (
+        payment.status === "Pending" &&
+        getRemainingMs(payment) <= 0
+      ) {
 
-      payment.status =
-        "Expired";
+        payment.status =
+          "Expired";
 
-      payment.expiredAt =
-        new Date().toISOString();
+        payment.expiredAt =
+          new Date().toISOString();
 
-      changed = true;
+        changed = true;
+
+      }
+
     }
-
-  });
+  );
 
   if (changed) {
-    savePayments(payments);
+
+    savePayments(
+      payments
+    );
+
   }
 
   return payments;
+
 }
 
-function formatAdminTime(ms) {
+function formatAdminTime(
+  ms
+) {
 
   const seconds =
     Math.max(
       0,
-      Math.ceil(ms / 1000)
+      Math.ceil(
+        ms / 1000
+      )
     );
 
   const minutes =
-    Math.floor(seconds / 60);
+    Math.floor(
+      seconds / 60
+    );
 
   const remaining =
     seconds % 60;
 
   return (
-    String(minutes).padStart(2, "0") +
+    String(minutes)
+      .padStart(2, "0") +
     ":" +
-    String(remaining).padStart(2, "0")
+    String(remaining)
+      .padStart(2, "0")
   );
+
 }
 
 // ======================================================
@@ -486,11 +646,24 @@ function formatAdminTime(ms) {
 const storage =
   multer.diskStorage({
 
-    destination(req, file, cb) {
-      cb(null, uploadDir);
+    destination(
+      req,
+      file,
+      cb
+    ) {
+
+      cb(
+        null,
+        uploadDir
+      );
+
     },
 
-    filename(req, file, cb) {
+    filename(
+      req,
+      file,
+      cb
+    ) {
 
       const ext =
         path.extname(
@@ -507,47 +680,569 @@ const storage =
           .slice(2, 9) +
         ext
       );
+
     }
 
   });
 
 const upload =
   multer({
+
     storage,
 
     limits: {
       fileSize:
         10 * 1024 * 1024
     }
+
   });
+
+// ======================================================
+// HOME FEEDBACK SECTION
+// ======================================================
+
+function getFeedbackHomeSection() {
+
+  return `
+
+<!-- =====================================================
+     VEXORA CUSTOMER FEEDBACK
+===================================================== -->
+
+<section
+  id="customer-feedback"
+  class="vexora-feedback-section"
+>
+
+  <div class="vexora-feedback-heading">
+
+    <div class="vexora-feedback-badge">
+      CUSTOMER FEEDBACK
+    </div>
+
+    <h2>
+      What Our Customers Say
+    </h2>
+
+    <p>
+      Real feedback from Vexora users.
+    </p>
+
+  </div>
+
+  <div
+    id="vexoraFeedbackTrack"
+    class="vexora-feedback-track"
+  >
+
+    <div class="vexora-feedback-loading">
+      Loading customer feedback...
+    </div>
+
+  </div>
+
+</section>
+
+<style>
+
+.vexora-feedback-section{
+  width:100%;
+  max-width:1100px;
+  margin:75px auto 50px;
+  padding:0 20px;
+  overflow:hidden;
+}
+
+.vexora-feedback-heading{
+  text-align:center;
+  margin-bottom:28px;
+}
+
+.vexora-feedback-badge{
+  display:inline-block;
+  padding:7px 14px;
+  border-radius:999px;
+  border:1px solid #514d86;
+  color:#a879ff;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:1px;
+}
+
+.vexora-feedback-heading h2{
+  margin:15px 0 8px;
+  color:#f5f7ff;
+  font-size:36px;
+  font-weight:900;
+}
+
+.vexora-feedback-heading p{
+  margin:0;
+  color:#91a0c2;
+  font-size:16px;
+}
+
+.vexora-feedback-track{
+  width:100%;
+  display:flex;
+  gap:18px;
+  overflow-x:auto;
+  padding:5px 2px 20px;
+  scroll-behavior:smooth;
+  scrollbar-width:none;
+}
+
+.vexora-feedback-track::-webkit-scrollbar{
+  display:none;
+}
+
+.vexora-feedback-card{
+  flex:0 0 330px;
+  min-height:190px;
+  padding:22px;
+  border-radius:22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #111d39,
+      #0a142b
+    );
+
+  border:1px solid #2b3d61;
+
+  box-shadow:
+    0 18px 45px
+    rgba(0,0,0,.25);
+
+  transition:
+    transform .25s ease,
+    border-color .25s ease;
+}
+
+.vexora-feedback-card:hover{
+  transform:translateY(-4px);
+  border-color:#7957d9;
+}
+
+.vexora-feedback-user{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  margin-bottom:15px;
+}
+
+.vexora-feedback-photo,
+.vexora-feedback-avatar{
+  width:52px;
+  height:52px;
+  flex:none;
+  border-radius:50%;
+}
+
+.vexora-feedback-photo{
+  object-fit:cover;
+  border:2px solid #8b5cff;
+}
+
+.vexora-feedback-avatar{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#18274a;
+  color:#a879ff;
+  font-size:20px;
+  font-weight:900;
+  border:2px solid #8b5cff;
+}
+
+.vexora-feedback-name{
+  color:#fff;
+  font-size:17px;
+  font-weight:800;
+}
+
+.vexora-feedback-stars{
+  margin-top:4px;
+  font-size:13px;
+  letter-spacing:1px;
+}
+
+.vexora-feedback-message{
+  color:#aebbd7;
+  font-size:15px;
+  line-height:1.7;
+}
+
+.vexora-feedback-loading,
+.vexora-feedback-empty{
+  width:100%;
+  text-align:center;
+  padding:35px 20px;
+  color:#8f9dbb;
+}
+
+@media(max-width:600px){
+
+  .vexora-feedback-section{
+    margin-top:55px;
+    padding:0 15px;
+  }
+
+  .vexora-feedback-heading h2{
+    font-size:29px;
+  }
+
+  .vexora-feedback-card{
+    flex:0 0 285px;
+  }
+
+}
+
+</style>
+
+<script>
+
+(function(){
+
+  const track =
+    document.getElementById(
+      "vexoraFeedbackTrack"
+    );
+
+  if(!track){
+    return;
+  }
+
+  function safe(value){
+
+    return String(value || "")
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+
+  }
+
+  async function loadFeedback(){
+
+    try{
+
+      const response =
+        await fetch(
+          "/api/feedback",
+          {
+            cache:"no-store"
+          }
+        );
+
+      if(!response.ok){
+        throw new Error(
+          "Feedback API error"
+        );
+      }
+
+      const data =
+        await response.json();
+
+      if(
+        !Array.isArray(data) ||
+        data.length === 0
+      ){
+
+        track.innerHTML = \`
+          <div class="vexora-feedback-empty">
+            Customer feedback coming soon.
+          </div>
+        \`;
+
+        return;
+
+      }
+
+      track.innerHTML =
+        data
+          .map(
+            item => {
+
+              const name =
+                safe(
+                  item.name ||
+                  "Customer"
+                );
+
+              const message =
+                safe(
+                  item.message ||
+                  ""
+                );
+
+              let rating =
+                Number(
+                  item.rating || 5
+                );
+
+              rating =
+                Math.max(
+                  1,
+                  Math.min(
+                    5,
+                    rating
+                  )
+                );
+
+              const stars =
+                "⭐".repeat(
+                  rating
+                );
+
+              const firstLetter =
+                safe(
+                  (
+                    item.name ||
+                    "C"
+                  )
+                  .charAt(0)
+                  .toUpperCase()
+                );
+
+              const avatar =
+                item.photo
+                  ? \`
+                    <img
+                      class="vexora-feedback-photo"
+                      src="\${safe(item.photo)}"
+                      alt=""
+                    >
+                  \`
+                  : \`
+                    <div
+                      class="vexora-feedback-avatar"
+                    >
+                      \${firstLetter}
+                    </div>
+                  \`;
+
+              return \`
+
+                <article
+                  class="vexora-feedback-card"
+                >
+
+                  <div
+                    class="vexora-feedback-user"
+                  >
+
+                    \${avatar}
+
+                    <div>
+
+                      <div
+                        class="vexora-feedback-name"
+                      >
+                        \${name}
+                      </div>
+
+                      <div
+                        class="vexora-feedback-stars"
+                      >
+                        \${stars}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div
+                    class="vexora-feedback-message"
+                  >
+                    \${message}
+                  </div>
+
+                </article>
+
+              \`;
+
+            }
+          )
+          .join("");
+
+      startAutoScroll();
+
+    }catch(error){
+
+      console.error(
+        "Feedback loading error:",
+        error
+      );
+
+      track.innerHTML = \`
+        <div class="vexora-feedback-empty">
+          Customer feedback coming soon.
+        </div>
+      \`;
+
+    }
+
+  }
+
+  function startAutoScroll(){
+
+    if(
+      track.dataset.started === "1"
+    ){
+      return;
+    }
+
+    track.dataset.started = "1";
+
+    setInterval(
+      function(){
+
+        const max =
+          track.scrollWidth -
+          track.clientWidth;
+
+        if(max <= 0){
+          return;
+        }
+
+        if(
+          track.matches(":hover")
+        ){
+          return;
+        }
+
+        if(
+          track.scrollLeft >=
+          max - 5
+        ){
+
+          track.scrollTo({
+            left:0,
+            behavior:"smooth"
+          });
+
+        }else{
+
+          track.scrollBy({
+            left:348,
+            behavior:"smooth"
+          });
+
+        }
+
+      },
+      3000
+    );
+
+  }
+
+  loadFeedback();
+
+})();
+
+</script>
+
+`;
+
+}
 
 // ======================================================
 // HOME
 // ======================================================
 
-app.get("/", (req, res) => {
+app.get(
+  "/",
+  (req, res) => {
 
-  res.sendFile(
-    path.join(
-      __dirname,
-      "index.html"
-    )
-  );
+    const indexFile =
+      path.join(
+        __dirname,
+        "index.html"
+      );
 
-});
+    try{
+
+      let html =
+        fs.readFileSync(
+          indexFile,
+          "utf8"
+        );
+
+      const feedbackSection =
+        getFeedbackHomeSection();
+
+      if(
+        html.includes(
+          "</body>"
+        )
+      ){
+
+        html =
+          html.replace(
+            "</body>",
+            feedbackSection +
+            "\n</body>"
+          );
+
+      }else{
+
+        html +=
+          feedbackSection;
+
+      }
+
+      res.send(html);
+
+    }catch(error){
+
+      console.error(
+        "Home page error:",
+        error
+      );
+
+      res
+        .status(500)
+        .send(
+          "Home page could not be loaded."
+        );
+
+    }
+
+  }
+);
 
 // ======================================================
 // PLANS PAGE
 // ======================================================
 
-app.get("/plans", (req, res) => {
+app.get(
+  "/plans",
+  (req, res) => {
 
-  const settings =
-    getSettings();
+    const settings =
+      getSettings();
 
-  const freeTrial =
-    settings.freeTrialEnabled
-      ? `
+    const freeTrial =
+      settings.freeTrialEnabled
+        ? `
         <div class="plan free">
 
           <div class="tag">
@@ -579,13 +1274,14 @@ app.get("/plans", (req, res) => {
           </a>
 
         </div>
-      `
-      : "";
+        `
+        : "";
 
-  const cards =
-    settings.plans
-      .map(
-        plan => `
+    const cards =
+      settings.plans
+        .map(
+          plan => `
+
         <div class="plan">
 
           <div class="tag">
@@ -593,13 +1289,17 @@ app.get("/plans", (req, res) => {
           </div>
 
           <h2>
-            ${escapeHTML(plan.name)}
+            ${escapeHTML(
+              plan.name
+            )}
           </h2>
 
           <div class="price">
             ₹${Number(
               plan.amount
-            ).toLocaleString("en-IN")}
+            ).toLocaleString(
+              "en-IN"
+            )}
           </div>
 
           <p>
@@ -618,12 +1318,15 @@ app.get("/plans", (req, res) => {
           </a>
 
         </div>
-        `
-      )
-      .join("");
 
-  res.send(`
+        `
+        )
+        .join("");
+
+    res.send(`
+
 <!doctype html>
+
 <html lang="en">
 
 <head>
@@ -635,7 +1338,9 @@ app.get("/plans", (req, res) => {
   content="width=device-width,initial-scale=1"
 >
 
-<title>Vexora Plans</title>
+<title>
+Vexora Plans
+</title>
 
 <style>
 
@@ -648,6 +1353,7 @@ body{
   min-height:100vh;
   font-family:Arial,sans-serif;
   color:#f5f7ff;
+
   background:
     radial-gradient(
       circle at top,
@@ -659,7 +1365,8 @@ body{
 .topbar{
   padding:22px 28px;
   border-bottom:1px solid #263455;
-  background:rgba(5,11,29,.9);
+  background:
+    rgba(5,11,29,.9);
 }
 
 .logo{
@@ -703,13 +1410,16 @@ body{
   position:relative;
   padding:28px;
   border-radius:24px;
+
   background:
     linear-gradient(
       145deg,
       #111d39,
       #0a142b
     );
+
   border:1px solid #2b3d61;
+
   box-shadow:
     0 20px 50px
     rgba(0,0,0,.25);
@@ -760,7 +1470,7 @@ body{
   border-radius:14px;
   color:white;
   font-weight:800;
-  text-decoration:none;
+
   background:
     linear-gradient(
       90deg,
@@ -793,9 +1503,9 @@ body{
 
 <header class="topbar">
 
-<div class="logo">
-V<span>exora</span>
-</div>
+  <div class="logo">
+    V<span>exora</span>
+  </div>
 
 </header>
 
@@ -803,46 +1513,52 @@ V<span>exora</span>
 
 <section class="hero">
 
-<h1>
-Choose Your Plan
-</h1>
+  <h1>
+    Choose Your Plan
+  </h1>
 
-<p>
-Select your Vexora premium membership.
-</p>
+  <p>
+    Select your Vexora premium membership.
+  </p>
 
 </section>
 
 <section class="plans">
 
-${freeTrial}
+  ${freeTrial}
 
-${cards}
+  ${cards}
 
 </section>
 
 </main>
 
 </body>
-</html>
-  `);
 
-});
+</html>
+
+`);
+
+  }
+);
 
 // ======================================================
 // PAYMENT PAGE
 // ======================================================
 
-app.get("/payment", (req, res) => {
+app.get(
+  "/payment",
+  (req, res) => {
 
-  res.sendFile(
-    path.join(
-      __dirname,
-      "payment.html"
-    )
-  );
+    res.sendFile(
+      path.join(
+        __dirname,
+        "payment.html"
+      )
+    );
 
-});
+  }
+);
 
 // ======================================================
 // SETTINGS API
@@ -855,13 +1571,15 @@ app.get(
     const settings =
       getSettings();
 
-    res.json(settings);
+    res.json(
+      settings
+    );
 
   }
 );
 
 // ======================================================
-// CUSTOMER FEEDBACK API
+// FEEDBACK API
 // ======================================================
 
 app.get(
@@ -869,19 +1587,11 @@ app.get(
   (req, res) => {
 
     const feedback =
-      getFeedback()
-        .filter(
-          item =>
-            item &&
-            item.active !== false
-        )
-        .sort(
-          (a, b) =>
-            Number(b.createdAt || 0) -
-            Number(a.createdAt || 0)
-        );
+      getFeedback();
 
-    res.json(feedback);
+    res.json(
+      feedback
+    );
 
   }
 );
@@ -890,16 +1600,19 @@ app.get(
 // SUBMIT PAGE
 // ======================================================
 
-app.get("/submit", (req, res) => {
+app.get(
+  "/submit",
+  (req, res) => {
 
-  res.sendFile(
-    path.join(
-      __dirname,
-      "submit.html"
-    )
-  );
+    res.sendFile(
+      path.join(
+        __dirname,
+        "submit.html"
+      )
+    );
 
-});
+  }
+);
 
 // ======================================================
 // SUBMIT PAYMENT
@@ -950,7 +1663,9 @@ app.post(
 
       expiresAt:
         new Date(
-          new Date(createdAt).getTime() +
+          new Date(
+            createdAt
+          ).getTime() +
           REVIEW_TIME_MS
         ).toISOString()
 
@@ -959,14 +1674,19 @@ app.post(
     const payments =
       getPayments();
 
-    payments.unshift(payment);
+    payments.unshift(
+      payment
+    );
 
-    savePayments(payments);
+    savePayments(
+      payments
+    );
 
     const settings =
       getSettings();
 
     res.send(`
+
 <!doctype html>
 
 <html lang="en">
@@ -980,7 +1700,9 @@ app.post(
   content="width=device-width,initial-scale=1"
 >
 
-<title>Payment Submitted</title>
+<title>
+Payment Submitted
+</title>
 
 <style>
 
@@ -995,7 +1717,9 @@ body{
   align-items:center;
   justify-content:center;
   padding:20px;
+
   font-family:Arial,sans-serif;
+
   background:#050b1d;
   color:white;
 }
@@ -1005,9 +1729,13 @@ body{
   max-width:440px;
   padding:35px 25px;
   text-align:center;
+
   border-radius:25px;
+
   background:#0d1a36;
+
   border:1px solid #3a3470;
+
   box-shadow:
     0 25px 70px
     rgba(0,0,0,.4);
@@ -1017,16 +1745,20 @@ body{
   width:70px;
   height:70px;
   margin:auto auto 20px;
+
   display:flex;
   align-items:center;
   justify-content:center;
+
   border-radius:50%;
+
   background:
     linear-gradient(
       135deg,
       #8b2cff,
       #087cff
     );
+
   font-size:38px;
   font-weight:900;
 }
@@ -1039,7 +1771,9 @@ h1{
 .plan{
   padding:17px;
   border-radius:15px;
+
   background:#071126;
+
   border:1px solid #343f69;
 }
 
@@ -1123,12 +1857,14 @@ h1{
   padding:15px;
   border:0;
   border-radius:14px;
+
   background:
     linear-gradient(
       135deg,
       #8b2cff,
       #087cff
     );
+
   color:white;
   font-size:17px;
   font-weight:800;
@@ -1153,27 +1889,36 @@ Payment Request Submitted
 <div class="plan">
 
 <div class="plan-name">
-${escapeHTML(payment.plan)}
+${escapeHTML(
+  payment.plan
+)}
 </div>
 
 <div class="amount">
 ₹${Number(
   payment.amount || 0
-).toLocaleString("en-IN")}
+).toLocaleString(
+  "en-IN"
+)}
 </div>
 
 </div>
 
 <p class="message">
+
 Your payment request has been submitted.
 Please wait while we verify your payment.
+
 </p>
 
 <div>
 Verification time remaining
 </div>
 
-<div id="timer" class="timer">
+<div
+  id="timer"
+  class="timer"
+>
 15:00
 </div>
 
@@ -1221,25 +1966,37 @@ OK
 <script>
 
 const paymentId =
-${JSON.stringify(payment.id)};
+${JSON.stringify(
+  payment.id
+)};
 
 const expiresAt =
-${JSON.stringify(payment.expiresAt)};
+${JSON.stringify(
+  payment.expiresAt
+)};
 
 const timer =
-document.getElementById("timer");
+document.getElementById(
+  "timer"
+);
 
 const status =
-document.getElementById("status");
+document.getElementById(
+  "status"
+);
 
 const manual =
-document.getElementById("manual");
+document.getElementById(
+  "manual"
+);
 
 let finished = false;
 
 function showStatus(value){
 
-  if(value === "Approved"){
+  if(
+    value === "Approved"
+  ){
 
     finished = true;
 
@@ -1260,7 +2017,9 @@ function showStatus(value){
 
   }
 
-  if(value === "Rejected"){
+  if(
+    value === "Rejected"
+  ){
 
     finished = true;
 
@@ -1279,24 +2038,30 @@ function showStatus(value){
     manual.style.display =
       "block";
 
-    manual.querySelector("h2")
+    manual
+      .querySelector("h2")
       .textContent =
       "Payment Rejected";
 
-    manual.querySelector("p")
+    manual
+      .querySelector("p")
       .textContent =
       "Your payment was rejected. Please contact us on Telegram.";
 
   }
 
-  if(value === "Expired"){
+  if(
+    value === "Expired"
+  ){
 
     finished = true;
 
     timer.textContent =
       "00:00";
 
-    timer.classList.add("expired");
+    timer.classList.add(
+      "expired"
+    );
 
     manual.style.display =
       "block";
@@ -1307,29 +2072,41 @@ function showStatus(value){
 
 async function checkStatus(){
 
-  if(finished) return;
+  if(finished){
+    return;
+  }
 
   try{
 
     const response =
       await fetch(
         "/payment-status/" +
-        encodeURIComponent(paymentId),
+        encodeURIComponent(
+          paymentId
+        ),
         {
           cache:"no-store"
         }
       );
 
-    if(!response.ok) return;
+    if(
+      !response.ok
+    ){
+      return;
+    }
 
     const data =
       await response.json();
 
-    showStatus(data.status);
+    showStatus(
+      data.status
+    );
 
   }catch(error){
 
-    console.error(error);
+    console.error(
+      error
+    );
 
   }
 
@@ -1337,18 +2114,26 @@ async function checkStatus(){
 
 function updateTimer(){
 
-  if(finished) return;
+  if(finished){
+    return;
+  }
 
   const remaining =
-    new Date(expiresAt).getTime() -
+    new Date(
+      expiresAt
+    ).getTime() -
     Date.now();
 
-  if(remaining <= 0){
+  if(
+    remaining <= 0
+  ){
 
     timer.textContent =
       "00:00";
 
-    timer.classList.add("expired");
+    timer.classList.add(
+      "expired"
+    );
 
     manual.style.display =
       "block";
@@ -1356,6 +2141,7 @@ function updateTimer(){
     checkStatus();
 
     return;
+
   }
 
   const seconds =
@@ -1372,9 +2158,11 @@ function updateTimer(){
     seconds % 60;
 
   timer.textContent =
-    String(min).padStart(2,"0") +
+    String(min)
+      .padStart(2,"0") +
     ":" +
-    String(sec).padStart(2,"0");
+    String(sec)
+      .padStart(2,"0");
 
 }
 
@@ -1395,7 +2183,8 @@ setInterval(
 </body>
 
 </html>
-    `);
+
+`);
 
   }
 );
@@ -1468,136 +2257,185 @@ app.get(
     // ==================================================
 
     const rows =
-      payments.map(payment => {
+      payments
+        .map(
+          payment => {
 
-        let statusClass =
-          "pending";
+            let statusClass =
+              "pending";
 
-        if(payment.status === "Approved")
-          statusClass = "approved";
+            if(
+              payment.status ===
+              "Approved"
+            ){
 
-        if(payment.status === "Rejected")
-          statusClass = "rejected";
+              statusClass =
+                "approved";
 
-        if(payment.status === "Expired")
-          statusClass = "expired";
+            }
 
-        let action = "";
+            if(
+              payment.status ===
+              "Rejected"
+            ){
 
-        if(payment.status === "Pending"){
+              statusClass =
+                "rejected";
 
-          action = `
-          <div class="timer">
+            }
 
-            <span
-              class="countdown"
-              data-expiry="${escapeHTML(
-                payment.expiresAt
-              )}"
-            >
-              ${formatAdminTime(
-                getRemainingMs(payment)
-              )}
-            </span>
+            if(
+              payment.status ===
+              "Expired"
+            ){
 
-          </div>
+              statusClass =
+                "expired";
 
-          <div class="actions">
+            }
 
-            <form
-              method="POST"
-              action="/admin/payment/${encodeURIComponent(
-                payment.id
-              )}/approve"
-            >
+            let action = "";
 
-              <button class="approve">
-                ✓ Approve
-              </button>
+            if(
+              payment.status ===
+              "Pending"
+            ){
 
-            </form>
+              action = `
 
-            <form
-              method="POST"
-              action="/admin/payment/${encodeURIComponent(
-                payment.id
-              )}/reject"
-            >
+              <div class="timer">
 
-              <button class="reject">
-                ✕ Reject
-              </button>
+                <span
+                  class="countdown"
+                  data-expiry="${escapeHTML(
+                    payment.expiresAt
+                  )}"
+                >
+                  ${formatAdminTime(
+                    getRemainingMs(
+                      payment
+                    )
+                  )}
+                </span>
 
-            </form>
+              </div>
 
-          </div>
-          `;
+              <div class="actions">
 
-        }else if(
-          payment.status === "Expired"
-        ){
+                <form
+                  method="POST"
+                  action="/admin/payment/${encodeURIComponent(
+                    payment.id
+                  )}/approve"
+                >
 
-          action = `
-            <div class="manual">
+                  <button
+                    class="approve"
+                  >
+                    ✓ Approve
+                  </button>
 
-              <strong>
-                Manual Review
-              </strong>
+                </form>
 
-              <a
-                href="${escapeHTML(
-                  settings.telegram
-                )}"
-                target="_blank"
-              >
-                Telegram
-              </a>
+                <form
+                  method="POST"
+                  action="/admin/payment/${encodeURIComponent(
+                    payment.id
+                  )}/reject"
+                >
 
-            </div>
-          `;
+                  <button
+                    class="reject"
+                  >
+                    ✕ Reject
+                  </button>
 
-        }else{
+                </form>
 
-          action = `
-            <span class="done">
-              ${
-                payment.status === "Approved"
-                  ? "✓ Approved"
-                  : "✕ Rejected"
-              }
-            </span>
-          `;
+              </div>
 
-        }
+              `;
 
-        const proof =
-          payment.proof
-            ? `
-              <a
-                class="proof"
-                href="${escapeHTML(
-                  payment.proof
-                )}"
-                target="_blank"
-              >
-                View Proof
-              </a>
-            `
-            : "No Proof";
+            }else if(
+              payment.status ===
+              "Expired"
+            ){
 
-        return `
+              action = `
+
+                <div class="manual">
+
+                  <strong>
+                    Manual Review
+                  </strong>
+
+                  <a
+                    href="${escapeHTML(
+                      settings.telegram
+                    )}"
+                    target="_blank"
+                  >
+                    Telegram
+                  </a>
+
+                </div>
+
+              `;
+
+            }else{
+
+              action = `
+
+                <span class="done">
+
+                  ${
+                    payment.status ===
+                    "Approved"
+                      ? "✓ Approved"
+                      : "✕ Rejected"
+                  }
+
+                </span>
+
+              `;
+
+            }
+
+            const proof =
+              payment.proof
+                ? `
+
+                  <a
+                    class="proof"
+                    href="${escapeHTML(
+                      payment.proof
+                    )}"
+                    target="_blank"
+                  >
+                    View Proof
+                  </a>
+
+                `
+                : "No Proof";
+
+            return `
+
 <tr>
 
 <td>
   <strong>
-    ${escapeHTML(payment.plan)}
+    ${escapeHTML(
+      payment.plan
+    )}
   </strong>
 </td>
 
 <td class="amount">
   ₹${Number(
     payment.amount || 0
-  ).toLocaleString("en-IN")}
+  ).toLocaleString(
+    "en-IN"
+  )}
 </td>
 
 <td>
@@ -1623,19 +2461,25 @@ app.get(
 </td>
 
 <td>
-  <span class="status ${statusClass}">
-    ${escapeHTML(
-      payment.status
-    )}
-  </span>
+
+<span
+  class="status ${statusClass}"
+>
+  ${escapeHTML(
+    payment.status
+  )}
+</span>
+
 </td>
 
 <td>
-  ${escapeHTML(
-    new Date(
-      payment.createdAt
-    ).toLocaleString()
-  )}
+
+${escapeHTML(
+  new Date(
+    payment.createdAt
+  ).toLocaleString()
+)}
+
 </td>
 
 <td>
@@ -1643,9 +2487,12 @@ app.get(
 </td>
 
 </tr>
-        `;
 
-      }).join("");
+            `;
+
+          }
+        )
+        .join("");
 
     // ==================================================
     // STATS
@@ -1656,22 +2503,30 @@ app.get(
 
     const pending =
       payments.filter(
-        p => p.status === "Pending"
+        p =>
+          p.status ===
+          "Pending"
       ).length;
 
     const approved =
       payments.filter(
-        p => p.status === "Approved"
+        p =>
+          p.status ===
+          "Approved"
       ).length;
 
     const rejected =
       payments.filter(
-        p => p.status === "Rejected"
+        p =>
+          p.status ===
+          "Rejected"
       ).length;
 
     const expired =
       payments.filter(
-        p => p.status === "Expired"
+        p =>
+          p.status ===
+          "Expired"
       ).length;
 
     // ==================================================
@@ -1679,7 +2534,9 @@ app.get(
     // ==================================================
 
     const planRows =
-      settings.plans.map(plan => `
+      settings.plans
+        .map(
+          plan => `
 
 <tr>
 
@@ -1689,8 +2546,12 @@ app.get(
   class="input"
   type="text"
   name="planName"
-  form="edit-${escapeHTML(plan.id)}"
-  value="${escapeHTML(plan.name)}"
+  form="edit-${escapeHTML(
+    plan.id
+  )}"
+  value="${escapeHTML(
+    plan.name
+  )}"
   required
 >
 
@@ -1702,8 +2563,12 @@ app.get(
   class="input small"
   type="number"
   name="planAmount"
-  form="edit-${escapeHTML(plan.id)}"
-  value="${Number(plan.amount)}"
+  form="edit-${escapeHTML(
+    plan.id
+  )}"
+  value="${Number(
+    plan.amount
+  )}"
   min="0"
   required
 >
@@ -1716,7 +2581,9 @@ app.get(
   class="input"
   type="text"
   name="planDescription"
-  form="edit-${escapeHTML(plan.id)}"
+  form="edit-${escapeHTML(
+    plan.id
+  )}"
   value="${escapeHTML(
     plan.description
   )}"
@@ -1729,14 +2596,18 @@ app.get(
 <div class="plan-actions">
 
 <form
-  id="edit-${escapeHTML(plan.id)}"
+  id="edit-${escapeHTML(
+    plan.id
+  )}"
   method="POST"
   action="/admin/settings/plan/${encodeURIComponent(
     plan.id
   )}/edit"
 >
 
-<button class="save">
+<button
+  class="save"
+>
 Save
 </button>
 
@@ -1750,7 +2621,9 @@ Save
   onsubmit="return confirm('Delete this plan?')"
 >
 
-<button class="delete">
+<button
+  class="delete"
+>
 Delete
 </button>
 
@@ -1762,147 +2635,129 @@ Delete
 
 </tr>
 
-      `).join("");
+          `
+        )
+        .join("");
 
     // ==================================================
     // FEEDBACK ROWS
     // ==================================================
 
     const feedbackRows =
-      feedback.map(item => {
+      feedback
+        .map(
+          item => {
 
-        const rating =
-          Math.min(
-            5,
-            Math.max(
-              1,
-              Number(item.rating || 5)
-            )
-          );
+            const photo =
+              item.photo
+                ? `
 
-        const stars =
-          "⭐".repeat(rating);
+                  <img
+                    class="feedback-admin-photo"
+                    src="${escapeHTML(
+                      item.photo
+                    )}"
+                    alt=""
+                  >
 
-        const photo =
-          item.photo
-            ? `
-              <img
-                src="${escapeHTML(
-                  item.photo
-                )}"
-                class="feedback-photo"
-              >
-            `
-            : `
-              <div class="feedback-avatar">
-                ${escapeHTML(
-                  String(
-                    item.name || "?"
+                `
+                : `
+
+                  <div
+                    class="feedback-admin-avatar"
+                  >
+                    ${escapeHTML(
+                      (
+                        item.name ||
+                        "C"
+                      )
+                        .charAt(0)
+                        .toUpperCase()
+                    )}
+                  </div>
+
+                `;
+
+            const rating =
+              Math.max(
+                1,
+                Math.min(
+                  5,
+                  Number(
+                    item.rating || 5
                   )
-                    .charAt(0)
-                    .toUpperCase()
-                )}
-              </div>
-            `;
+                )
+              );
 
-        return `
+            return `
+
 <tr>
 
 <td>
+
+<div class="feedback-admin-user">
+
   ${photo}
-</td>
 
-<td>
   <strong>
-    ${escapeHTML(item.name)}
+    ${escapeHTML(
+      item.name
+    )}
   </strong>
-</td>
 
-<td class="feedback-message">
-  ${escapeHTML(item.message)}
-</td>
-
-<td>
-  <span class="stars">
-    ${stars}
-  </span>
-</td>
-
-<td>
-
-<span
-  class="status ${
-    item.active === false
-      ? "rejected"
-      : "approved"
-  }"
->
-
-${
-  item.active === false
-    ? "Hidden"
-    : "Visible"
-}
-
-</span>
+</div>
 
 </td>
 
 <td>
 
-<div class="plan-actions">
+<div class="admin-stars">
+  ${"⭐".repeat(
+    rating
+  )}
+</div>
 
-<form
-  method="POST"
-  action="/admin/feedback/${encodeURIComponent(
-    item.id
-  )}/toggle"
->
+</td>
 
-<button
-  class="${
-    item.active === false
-      ? "save"
-      : "delete"
-  }"
->
+<td class="feedback-message-cell">
 
-${
-  item.active === false
-    ? "Show"
-    : "Hide"
-}
+${escapeHTML(
+  item.message
+)}
 
-</button>
+</td>
 
-</form>
+<td>
 
 <form
   method="POST"
   action="/admin/feedback/${encodeURIComponent(
     item.id
   )}/delete"
-  onsubmit="
-    return confirm(
-      'Delete this feedback?'
-    )
-  "
+  onsubmit="return confirm('Delete this feedback?')"
 >
 
-<button class="delete">
+<button
+  class="delete"
+>
 Delete
 </button>
 
 </form>
 
-</div>
-
 </td>
 
 </tr>
-        `;
 
-      }).join("");
+            `;
+
+          }
+        )
+        .join("");
+
+    // ==================================================
+    // ADMIN PAGE
+    // ==================================================
 
     res.send(`
 
@@ -1932,9 +2787,14 @@ Vexora Admin Dashboard
 body{
   margin:0;
   min-height:100vh;
+
   font-family:
-    Arial,Helvetica,sans-serif;
+    Arial,
+    Helvetica,
+    sans-serif;
+
   color:#f4f7ff;
+
   background:
     radial-gradient(
       circle at top right,
@@ -1947,10 +2807,15 @@ body{
   position:sticky;
   top:0;
   z-index:20;
+
   padding:20px 28px;
+
   background:
     rgba(5,11,29,.88);
-  backdrop-filter:blur(18px);
+
+  backdrop-filter:
+    blur(18px);
+
   border-bottom:
     1px solid
     rgba(139,92,255,.22);
@@ -1968,8 +2833,10 @@ body{
       #a12cff,
       #087cff
     );
+
   -webkit-background-clip:text;
   background-clip:text;
+
   color:transparent;
 }
 
@@ -1997,22 +2864,27 @@ body{
   display:grid;
   grid-template-columns:
     repeat(5,1fr);
+
   gap:14px;
+
   margin-bottom:25px;
 }
 
 .stat{
   padding:20px;
   border-radius:20px;
+
   background:
     linear-gradient(
       145deg,
       rgba(20,34,66,.92),
       rgba(10,19,40,.92)
     );
+
   border:
     1px solid
     rgba(111,140,205,.22);
+
   box-shadow:
     0 15px 40px
     rgba(0,0,0,.18);
@@ -2033,8 +2905,10 @@ body{
   margin-bottom:25px;
   padding:25px;
   border-radius:22px;
+
   background:
     rgba(13,26,53,.88);
+
   border:
     1px solid
     rgba(111,140,205,.22);
@@ -2049,6 +2923,7 @@ body{
   display:grid;
   grid-template-columns:
     repeat(2,1fr);
+
   gap:15px;
 }
 
@@ -2071,9 +2946,14 @@ body{
 .input{
   width:100%;
   padding:12px 13px;
-  border:1px solid #293d65;
+
+  border:
+    1px solid
+    #293d65;
+
   border-radius:11px;
   outline:none;
+
   background:#071126;
   color:#fff;
 }
@@ -2090,8 +2970,10 @@ body{
   display:flex;
   align-items:center;
   gap:10px;
+
   padding:13px;
   border-radius:11px;
+
   background:#071126;
 }
 
@@ -2102,12 +2984,17 @@ body{
 
 .primary{
   margin-top:18px;
+
   border:0;
   padding:13px 20px;
+
   border-radius:11px;
+
   color:white;
   font-weight:800;
+
   cursor:pointer;
+
   background:
     linear-gradient(
       90deg,
@@ -2118,32 +3005,50 @@ body{
 
 .table-wrap{
   overflow:auto;
+
   border-radius:20px;
+
   border:
     1px solid
     rgba(111,140,205,.22);
+
   background:#0b1730;
 }
 
 table{
   width:100%;
-  min-width:1400px;
+  min-width:900px;
+
   border-collapse:collapse;
+}
+
+.payment-table{
+  min-width:1400px;
 }
 
 th{
   padding:16px;
   text-align:left;
+
   color:#8e9dbd;
   font-size:12px;
+
   text-transform:uppercase;
-  border-bottom:1px solid #263756;
+
+  border-bottom:
+    1px solid
+    #263756;
 }
 
 td{
   padding:16px;
-  border-bottom:1px solid #192a48;
+
+  border-bottom:
+    1px solid
+    #192a48;
+
   color:#dce5fb;
+
   vertical-align:middle;
 }
 
@@ -2159,8 +3064,11 @@ tr:last-child td{
 
 .status{
   display:inline-block;
+
   padding:7px 11px;
+
   border-radius:999px;
+
   font-size:12px;
   font-weight:800;
 }
@@ -2191,11 +3099,19 @@ tr:last-child td{
 
 .countdown{
   display:inline-block;
+
   padding:6px 10px;
+
   border-radius:8px;
+
   color:#b487ff;
+
   background:#071126;
-  border:1px solid #3b3272;
+
+  border:
+    1px solid
+    #3b3272;
+
   font-weight:900;
   font-size:12px;
 }
@@ -2213,10 +3129,15 @@ tr:last-child td{
 .save,
 .delete{
   border:0;
+
   border-radius:9px;
+
   padding:9px 12px;
+
   color:white;
+
   font-weight:800;
+
   cursor:pointer;
 }
 
@@ -2237,12 +3158,18 @@ tr:last-child td{
 
 .proof{
   display:inline-block;
+
   padding:9px 12px;
+
   border-radius:9px;
+
   color:white;
+
   text-decoration:none;
+
   font-size:12px;
   font-weight:800;
+
   background:
     linear-gradient(
       90deg,
@@ -2253,8 +3180,11 @@ tr:last-child td{
 
 .manual{
   display:flex;
+
   gap:8px;
+
   align-items:center;
+
   flex-wrap:wrap;
 }
 
@@ -2265,42 +3195,62 @@ tr:last-child td{
 
 .manual a{
   padding:8px 10px;
+
   border-radius:8px;
+
   color:white;
+
   text-decoration:none;
+
   background:#168dcc;
+
   font-size:12px;
+
   font-weight:800;
 }
 
 .plan-actions{
   display:flex;
+
   gap:8px;
+
   flex-wrap:wrap;
 }
 
 .add-plan{
   display:grid;
+
   grid-template-columns:
     1fr 150px 1fr auto;
+
   gap:10px;
+
   align-items:end;
 }
 
 .add-plan label{
   display:block;
+
   margin-bottom:7px;
+
   color:#aebce0;
+
   font-size:12px;
 }
 
 .add{
   border:0;
+
   padding:12px 18px;
+
   border-radius:10px;
+
   color:white;
+
   font-weight:800;
+
   cursor:pointer;
+
   background:
     linear-gradient(
       90deg,
@@ -2311,57 +3261,122 @@ tr:last-child td{
 
 .empty{
   padding:45px;
+
   text-align:center;
+
   color:#8190b0;
 }
 
-.feedback-photo{
-  width:50px;
-  height:50px;
-  object-fit:cover;
-  border-radius:50%;
-  border:2px solid #714cff;
-}
-
-.feedback-avatar{
-  width:50px;
-  height:50px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#18274a;
-  color:#a879ff;
-  font-weight:900;
-  font-size:20px;
-}
-
-.feedback-message{
-  max-width:420px;
-  line-height:1.5;
-}
-
-.stars{
-  white-space:nowrap;
-}
+/* ====================================================
+   FEEDBACK ADMIN
+==================================================== */
 
 .feedback-form{
   display:grid;
+
   grid-template-columns:
-    1fr 1fr 120px 1fr auto;
-  gap:10px;
+    1fr 130px 2fr 180px auto;
+
+  gap:12px;
+
   align-items:end;
-  margin-bottom:25px;
 }
 
 .feedback-form label{
   display:block;
+
   margin-bottom:7px;
+
   color:#aebce0;
+
   font-size:12px;
 }
 
-@media(max-width:1000px){
+.feedback-add{
+  border:0;
+
+  padding:12px 18px;
+
+  border-radius:10px;
+
+  color:white;
+
+  font-weight:800;
+
+  cursor:pointer;
+
+  background:
+    linear-gradient(
+      90deg,
+      #8b2cff,
+      #087cff
+    );
+}
+
+.feedback-admin-user{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.feedback-admin-photo,
+.feedback-admin-avatar{
+  width:45px;
+  height:45px;
+
+  flex:none;
+
+  border-radius:50%;
+}
+
+.feedback-admin-photo{
+  object-fit:cover;
+
+  border:
+    2px solid
+    #8b5cff;
+}
+
+.feedback-admin-avatar{
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  background:#18274a;
+
+  color:#a879ff;
+
+  font-weight:900;
+
+  border:
+    2px solid
+    #8b5cff;
+}
+
+.admin-stars{
+  white-space:nowrap;
+}
+
+.feedback-message-cell{
+  max-width:450px;
+  line-height:1.6;
+  color:#aebbd7;
+}
+
+.feedback-note{
+  margin-top:12px;
+
+  color:#7f8eaf;
+
+  font-size:13px;
+}
+
+/* ====================================================
+   RESPONSIVE
+==================================================== */
+
+@media(max-width:1100px){
 
   .stats{
     grid-template-columns:
@@ -2370,7 +3385,7 @@ tr:last-child td{
 
   .feedback-form{
     grid-template-columns:
-      1fr 1fr;
+      1fr 130px 1fr;
   }
 
 }
@@ -2389,13 +3404,13 @@ tr:last-child td{
     grid-template-columns:1fr;
   }
 
+  .feedback-form{
+    grid-template-columns:1fr;
+  }
+
   .stats{
     grid-template-columns:
       repeat(2,1fr);
-  }
-
-  .feedback-form{
-    grid-template-columns:1fr;
   }
 
 }
@@ -2403,7 +3418,10 @@ tr:last-child td{
 @media(max-width:500px){
 
   .container{
-    padding:22px 12px 50px;
+    padding:
+      22px
+      12px
+      50px;
   }
 
   .topbar{
@@ -2429,7 +3447,10 @@ tr:last-child td{
 <header class="topbar">
 
 <div class="logo">
-V<span>exora</span> Admin
+
+V<span>exora</span>
+Admin
+
 </div>
 
 </header>
@@ -2455,48 +3476,63 @@ Payments, plans, feedback and website controls.
 <section class="stats">
 
 <div class="stat">
+
 <span class="stat-number">
 ${total}
 </span>
+
 <span class="stat-label">
 Total Payments
 </span>
+
 </div>
 
 <div class="stat">
+
 <span class="stat-number">
 ${pending}
 </span>
+
 <span class="stat-label">
 Pending
 </span>
+
 </div>
 
 <div class="stat">
+
 <span class="stat-number">
 ${approved}
 </span>
+
 <span class="stat-label">
 Approved
 </span>
+
 </div>
 
 <div class="stat">
+
 <span class="stat-number">
 ${rejected}
 </span>
+
 <span class="stat-label">
 Rejected
 </span>
+
 </div>
 
 <div class="stat">
+
 <span class="stat-number">
 ${expired}
 </span>
+
 <span class="stat-label">
 Expired
 </span>
+
 </div>
 
 </section>
@@ -2639,10 +3675,23 @@ Save Website Settings
 <thead>
 
 <tr>
-<th>Plan</th>
-<th>Amount</th>
-<th>Description</th>
-<th>Action</th>
+
+<th>
+Plan
+</th>
+
+<th>
+Amount
+</th>
+
+<th>
+Description
+</th>
+
+<th>
+Action
+</th>
+
 </tr>
 
 </thead>
@@ -2653,12 +3702,14 @@ ${
   planRows ||
   `
 <tr>
+
 <td
   colspan="4"
   class="empty"
 >
 No plans found.
 </td>
+
 </tr>
 `
 }
@@ -2734,13 +3785,13 @@ Description
 </section>
 
 <!-- ==================================================
-     CUSTOMER FEEDBACK
+     CUSTOMER FEEDBACK MANAGER
 ================================================== -->
 
 <section class="panel">
 
 <h2>
-💬 Customer Feedback
+⭐ Customer Feedback
 </h2>
 
 <form
@@ -2760,9 +3811,45 @@ Customer Name
   class="input"
   type="text"
   name="name"
-  placeholder="Customer name"
+  placeholder="Rahul"
   required
 >
+
+</div>
+
+<div>
+
+<label>
+Rating
+</label>
+
+<select
+  class="input"
+  name="rating"
+  required
+>
+
+<option value="5">
+5 ⭐
+</option>
+
+<option value="4">
+4 ⭐
+</option>
+
+<option value="3">
+3 ⭐
+</option>
+
+<option value="2">
+2 ⭐
+</option>
+
+<option value="1">
+1 ⭐
+</option>
+
+</select>
 
 </div>
 
@@ -2776,25 +3863,8 @@ Feedback Message
   class="input"
   type="text"
   name="message"
-  placeholder="Amazing indicator!"
+  placeholder="Amazing indicator and fast support!"
   required
->
-
-</div>
-
-<div>
-
-<label>
-Rating
-</label>
-
-<input
-  class="input"
-  type="number"
-  name="rating"
-  min="1"
-  max="5"
-  value="5"
 >
 
 </div>
@@ -2808,39 +3878,39 @@ Customer Photo
 <input
   class="input"
   type="file"
-  name="photo"
+  name="feedbackPhoto"
   accept="image/*"
 >
 
 </div>
 
 <button
-  class="add"
-  type="submit"
+  class="feedback-add"
 >
-+ Add
++ Add Feedback
 </button>
 
 </form>
 
+<div class="feedback-note">
+
+Feedback added here will automatically appear on the
+home page and continuously scroll from left to right.
+
+</div>
+
+<br>
+
 <div class="table-wrap">
 
-<table style="min-width:950px">
+<table style="min-width:800px">
 
 <thead>
 
 <tr>
 
 <th>
-Photo
-</th>
-
-<th>
-Name
-</th>
-
-<th>
-Feedback
+Customer
 </th>
 
 <th>
@@ -2848,7 +3918,7 @@ Rating
 </th>
 
 <th>
-Status
+Message
 </th>
 
 <th>
@@ -2867,10 +3937,10 @@ ${
 <tr>
 
 <td
-  colspan="6"
+  colspan="4"
   class="empty"
 >
-No customer feedback yet.
+No customer feedback added yet.
 </td>
 
 </tr>
@@ -2897,7 +3967,7 @@ No customer feedback yet.
 
 <div class="table-wrap">
 
-<table>
+<table class="payment-table">
 
 <thead>
 
@@ -2978,49 +4048,70 @@ function updateTimers(){
   let reload = false;
 
   document
-    .querySelectorAll(".countdown")
-    .forEach(el => {
+    .querySelectorAll(
+      ".countdown"
+    )
+    .forEach(
+      el => {
 
-      const expiry =
-        new Date(
-          el.dataset.expiry
-        ).getTime();
+        const expiry =
+          new Date(
+            el.dataset.expiry
+          ).getTime();
 
-      const remaining =
-        Math.max(
-          0,
-          expiry -
-          Date.now()
-        );
+        const remaining =
+          Math.max(
+            0,
+            expiry -
+            Date.now()
+          );
 
-      const seconds =
-        Math.ceil(
-          remaining / 1000
-        );
+        const seconds =
+          Math.ceil(
+            remaining /
+            1000
+          );
 
-      const minutes =
-        Math.floor(
-          seconds / 60
-        );
+        const minutes =
+          Math.floor(
+            seconds /
+            60
+          );
 
-      const sec =
-        seconds % 60;
+        const sec =
+          seconds %
+          60;
 
-      el.textContent =
-        String(minutes)
-          .padStart(2,"0") +
-        ":" +
-        String(sec)
-          .padStart(2,"0");
+        el.textContent =
+          String(
+            minutes
+          ).padStart(
+            2,
+            "0"
+          ) +
+          ":" +
+          String(
+            sec
+          ).padStart(
+            2,
+            "0"
+          );
 
-      if(remaining <= 0){
-        reload = true;
+        if(
+          remaining <= 0
+        ){
+
+          reload = true;
+
+        }
+
       }
-
-    });
+    );
 
   if(reload){
+
     location.reload();
+
   }
 
 }
@@ -3037,7 +4128,8 @@ setInterval(
 </body>
 
 </html>
-    `);
+
+`);
 
   }
 );
@@ -3088,7 +4180,9 @@ app.post(
       settings
     );
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
 
   }
 );
@@ -3123,9 +4217,11 @@ app.post(
       ).trim();
 
     if(!name){
+
       return res.redirect(
         "/admin"
       );
+
     }
 
     let id =
@@ -3141,19 +4237,23 @@ app.post(
         );
 
     if(!id){
+
       id =
         "plan-" +
         Date.now();
+
     }
 
     const originalId =
       id;
 
-    let counter = 2;
+    let counter =
+      2;
 
     while(
       settings.plans.some(
-        p => p.id === id
+        p =>
+          p.id === id
       )
     ){
 
@@ -3182,7 +4282,9 @@ app.post(
       settings
     );
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
 
   }
 );
@@ -3213,20 +4315,25 @@ app.post(
         ).trim();
 
       if(name){
-        plan.name = name;
+
+        plan.name =
+          name;
+
       }
 
       plan.amount =
         Math.max(
           0,
           Number(
-            req.body.planAmount || 0
+            req.body.planAmount ||
+            0
           )
         );
 
       plan.description =
         String(
-          req.body.planDescription || ""
+          req.body.planDescription ||
+          ""
         ).trim();
 
       saveSettings(
@@ -3235,7 +4342,9 @@ app.post(
 
     }
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
 
   }
 );
@@ -3262,18 +4371,20 @@ app.post(
       settings
     );
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
 
   }
 );
 
 // ======================================================
-// ADD FEEDBACK
+// ADD CUSTOMER FEEDBACK
 // ======================================================
 
 app.post(
   "/admin/feedback/add",
-  upload.single("photo"),
+  upload.single("feedbackPhoto"),
   (req, res) => {
 
     const name =
@@ -3286,34 +4397,42 @@ app.post(
         req.body.message || ""
       ).trim();
 
-    const rating =
-      Math.min(
-        5,
-        Math.max(
-          1,
-          Number(
-            req.body.rating || 5
-          )
+    let rating =
+      Number(
+        req.body.rating || 5
+      );
+
+    rating =
+      Math.max(
+        1,
+        Math.min(
+          5,
+          rating
         )
       );
 
-    if(!name || !message){
+    if(
+      !name ||
+      !message
+    ){
+
       return res.redirect(
         "/admin"
       );
+
     }
 
     const feedback =
       getFeedback();
 
-    feedback.unshift({
+    const item = {
 
       id:
         Date.now() +
         "-" +
         Math.random()
           .toString(36)
-          .slice(2, 8),
+          .slice(2,8),
 
       name,
 
@@ -3327,56 +4446,32 @@ app.post(
             req.file.filename
           : "",
 
-      active:
-        true,
-
       createdAt:
-        Date.now()
+        new Date().toISOString()
 
-    });
+    };
+
+    feedback.unshift(
+      item
+    );
 
     saveFeedback(
       feedback
     );
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
 
   }
 );
 
 // ======================================================
-// DELETE FEEDBACK
+// DELETE CUSTOMER FEEDBACK
 // ======================================================
 
 app.post(
   "/admin/feedback/:id/delete",
-  (req, res) => {
-
-    const feedback =
-      getFeedback();
-
-    const updated =
-      feedback.filter(
-        item =>
-          item.id !==
-          req.params.id
-      );
-
-    saveFeedback(
-      updated
-    );
-
-    res.redirect("/admin");
-
-  }
-);
-
-// ======================================================
-// SHOW / HIDE FEEDBACK
-// ======================================================
-
-app.post(
-  "/admin/feedback/:id/toggle",
   (req, res) => {
 
     const feedback =
@@ -3391,91 +4486,63 @@ app.post(
 
     if(item){
 
-      item.active =
-        item.active === false;
+      if(
+        item.photo &&
+        item.photo.startsWith(
+          "/uploads/"
+        )
+      ){
 
-      saveFeedback(
-        feedback
-      );
+        const photoPath =
+          path.join(
+            publicDir,
+            item.photo.replace(
+              "/",
+              ""
+            )
+          );
+
+        try{
+
+          if(
+            fs.existsSync(
+              photoPath
+            )
+          ){
+
+            fs.unlinkSync(
+              photoPath
+            );
+
+          }
+
+        }catch(error){
+
+          console.error(
+            "Feedback photo delete error:",
+            error
+          );
+
+        }
+
+      }
 
     }
 
-    res.redirect("/admin");
-
-  }
-);
-
-// ======================================================
-// EDIT FEEDBACK
-// ======================================================
-
-app.post(
-  "/admin/feedback/:id/edit",
-  upload.single("photo"),
-  (req, res) => {
-
-    const feedback =
-      getFeedback();
-
-    const item =
-      feedback.find(
+    const updated =
+      feedback.filter(
         f =>
-          f.id ===
+          f.id !==
           req.params.id
       );
 
-    if(!item){
-      return res.redirect(
-        "/admin"
-      );
-    }
-
-    const name =
-      String(
-        req.body.name || ""
-      ).trim();
-
-    const message =
-      String(
-        req.body.message || ""
-      ).trim();
-
-    const rating =
-      Math.min(
-        5,
-        Math.max(
-          1,
-          Number(
-            req.body.rating || 5
-          )
-        )
-      );
-
-    if(name){
-      item.name = name;
-    }
-
-    if(message){
-      item.message =
-        message;
-    }
-
-    item.rating =
-      rating;
-
-    if(req.file){
-
-      item.photo =
-        "/uploads/" +
-        req.file.filename;
-
-    }
-
     saveFeedback(
-      feedback
+      updated
     );
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
 
   }
 );
@@ -3500,7 +4567,8 @@ app.post(
 
     if(
       payment &&
-      payment.status === "Pending" &&
+      payment.status ===
+        "Pending" &&
       !isExpired(payment)
     ){
 
@@ -3516,7 +4584,9 @@ app.post(
 
     }
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
 
   }
 );
@@ -3541,7 +4611,8 @@ app.post(
 
     if(
       payment &&
-      payment.status === "Pending" &&
+      payment.status ===
+        "Pending" &&
       !isExpired(payment)
     ){
 
@@ -3557,13 +4628,15 @@ app.post(
 
     }
 
-    res.redirect("/admin");
+    res.redirect(
+      "/admin"
+    );
 
   }
 );
 
 // ======================================================
-// START
+// START SERVER
 // ======================================================
 
 app.listen(
